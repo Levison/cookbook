@@ -3,9 +3,12 @@
 **Status:** needs human double-check against the cookbook photo  
 **Recipe file:** [`recipes/Pumpkin Pizza.cook`](../recipes/Pumpkin%20Pizza.cook)  
 **Printed source:** *The Runner's World Vegetarian Cookbook*, p. 144 — “Smoky Squash Flatbread with Balsamic Glaze”  
-**Working title (handwritten):** “or PUMPKIN PIZZA (sounds way better)”
+**Working title (handwritten):** “or PUMPKIN PIZZA (sounds way better)”  
+**Canonical change list:** frontmatter `changes` (and `origin_title`) in the `.cook` file — keep that list in sync when editing this review.
 
 ## What was treated as correct (handwritten)
+
+Mirrored in recipe frontmatter `changes`:
 
 - Name: Pumpkin Pizza preferred over the printed flatbread title
 - Squash base: canned pumpkin is fine (`or one can pumpkin`) — frozen winter squash puree often unavailable
