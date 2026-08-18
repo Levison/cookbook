@@ -1,0 +1,34 @@
+# Validate Cooklang recipes and aisle coverage (non-blocking aisle gaps).
+# Fails the job when `cook doctor validate --strict` finds errors or warnings.
+
+name: Doctor
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CookCLI
+        run: |
+          curl -fsSL -o cook.tar.gz \
+            https://github.com/cooklang/cookcli/releases/latest/download/cook-x86_64-unknown-linux-gnu.tar.gz
+          tar xz -f cook.tar.gz
+          sudo mv cook /usr/local/bin/
+          cook --version
+
+      - name: Validate recipes
+        run: cook doctor validate --strict --base-path "${{ github.workspace }}/recipes"
+
+      - name: Report aisle gaps
+        run: cook doctor aisle --base-path "${{ github.workspace }}/recipes"
