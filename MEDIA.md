@@ -9,86 +9,112 @@ Plan for adding pictures without turning the cookbook into a CMS, and without fi
 - Stay compatible with CookCLI / Cooklang conventions.
 - If a CMS ever appears, it should only be an upload UI over the same contract—not a new home for recipe text.
 
+## Decisions (locked)
+
+| Topic | Choice |
+| --- | --- |
+| Phase 1 storage | Compressed images in git (Cooklang sidecars), roughly **≲ 200 KB** per hero; WebP or JPEG is fine |
+| Phase 2 storage | **Cloudflare R2** + frontmatter `image:` URLs |
+| Phase 2 trigger | Only when Pages deploys start failing or we’re **nearing the 1 GB** site cap—not an early soft MB budget |
+| Frontmatter now | Set **`image:`** when a recipe has a hero, even in Phase 1 |
+| Identity | Explicit **`slug:`** in frontmatter (not derived-only from the filename) |
+| Source scans | Not for new public heroes; leave existing sidecars for now; **drop them later** (see [Backlog tickets](#backlog-tickets)) |
+| CMS | Not now; `slug:` + `image:` is the preparation |
+
 ## Phase 1 — compressed images in the repo (now)
 
-Use Cooklang’s sidecar convention: a supported image next to the recipe with the **same base name**.
+Use Cooklang’s sidecar convention **and** frontmatter pointers:
 
 ```text
 recipes/Creamy Chicken Marsala.cook
 recipes/Creamy Chicken Marsala.jpg   # or .webp / .png / …
 ```
 
-CookCLI copies matching images into the static site on `cook build web`, so they show up on GitHub Pages with no extra config.
+```yaml
+---
+title: Easy Creamy Chicken Marsala
+slug: creamy-chicken-marsala
+image: https://raw.githubusercontent.com/Levison/cookbook/main/recipes/Creamy%20Chicken%20Marsala.jpg
+---
+```
 
-**Rules for this phase:**
+- **Sidecar** — CookCLI copies matching images into `_site` on `cook build web` (local preview + Pages).
+- **`image:`** — Canonical hero URL for tooling/CMS later. In Phase 1, point at the committed file’s stable public URL (raw GitHub as above, or the Pages static URL once you prefer that). Same field becomes the R2 URL in Phase 2.
+- **`slug:`** — Stable id for object paths and future uploads. Choose it once; don’t rename casually.
 
-- Commit only **compressed** recipe images (aim small enough for phone viewing; rough target **≲ 200 KB** per hero).
+**Rules:**
+
+- Commit only **compressed** recipe images (phone-friendly; rough target **≲ 200 KB** per hero).
 - Do **not** commit phone originals, RAW, or Drive dumps.
+- Format: **either WebP or JPEG** (or other CookCLI-supported types) if small enough.
 - Prefer one hero image per recipe for now.
-- Stay on this phase until media size becomes a problem (see Phase 2 trigger below).
+- New images should be deliberate recipe photos—not cookbook-page / transcription scans.
 
-Today the repo already has two sidecars (`Macarons au Chocolat.jpg`, `Ganaches au Chocolat.jpg`). Those are source-page scans, not plated heroes—treat that as historical; new images should be deliberate recipe photos unless we decide otherwise (open decision).
+## Phase 2 — Cloudflare R2 + frontmatter URLs (near the 1 GB ceiling)
 
-## Phase 2 — Cloudflare R2 + frontmatter URLs (when space gets tight)
+When Pages is actually threatened by media size:
 
-When in-repo / Pages media is no longer comfortable, stop shipping image bytes through git and Pages:
-
-1. Upload optimized images to **Cloudflare R2** (public URL or CDN in front).
-2. Point each recipe at its hero with Cooklang metadata:
+1. Upload optimized images to **Cloudflare R2** (public bucket URL or CDN in front).
+2. Point `image:` at R2 using the recipe’s `slug:`:
 
 ```yaml
 ---
 title: Easy Creamy Chicken Marsala
+slug: creamy-chicken-marsala
 image: https://media.example.com/cookbook/creamy-chicken-marsala/hero.webp
 ---
 ```
 
-3. Optionally remove old sidecar files from git so `_site` stays tiny.
-4. Keep using the same stable path scheme in the bucket so agents (and a future CMS) can predict URLs:
+3. Remove sidecar binaries from git so `_site` stays tiny.
+4. Bucket layout (agents and a future CMS both use this):
 
 ```text
 cookbook/<slug>/hero.webp
 cookbook/<slug>/step-1.webp   # later, if needed
 ```
 
-Cooklang also accepts `images`, `picture`, and `pictures` for URLs; prefer **`image:`** as the single canonical hero field unless we need galleries.
-
-**Suggested switch trigger:** leave Phase 1 when total recipe image weight in the repo (or in `_site`) is getting awkward—not only at the hard 1 GB Pages ceiling. Exact budget is an open decision.
+Cooklang also accepts `images`, `picture`, and `pictures`; prefer **`image:`** as the single canonical hero field unless we need galleries.
 
 ## CMS stance
 
 No CMS for now. The agent + git flow is the product.
 
-Preparation for a possible later CMS is just this contract:
-
 | Concern | Stays in git | Lives outside git |
 | --- | --- | --- |
-| Recipe text / metadata | `.cook` files | — |
-| Hero (and later step) pixels | Phase 1 only, compressed | Phase 2: R2 |
-| Image pointer | Phase 2: `image:` URL in frontmatter | — |
+| Recipe text / metadata | `.cook` files (`slug:`, etc.) | — |
+| Hero pixels | Phase 1 only, compressed sidecars | Phase 2: R2 |
+| Image pointer | `image:` URL in frontmatter (both phases) | — |
 
-A future CMS would write the same `image:` URLs (and maybe help upload to R2). It would not own the recipes.
+A future CMS would write the same `slug:` / `image:` fields (and maybe upload to R2). It would not own the recipes.
 
 ## Agent / human workflow
 
 **Phase 1**
 
-1. Compress a hero image.
-2. Save it beside the `.cook` file with a matching stem.
-3. Commit; Pages rebuild picks it up.
+1. Pick a stable `slug:` (add to frontmatter if missing).
+2. Compress a hero image (≲ ~200 KB; WebP or JPEG).
+3. Save it beside the `.cook` file with a matching stem.
+4. Set `image:` to that file’s public URL.
+5. Commit; Pages rebuild picks up the sidecar.
 
 **Phase 2**
 
 1. Upload to R2 at `cookbook/<slug>/hero.webp`.
-2. Set `image:` in the recipe frontmatter.
-3. Commit the `.cook` change only (no binary).
+2. Update `image:` to the R2 URL.
+3. Delete the sidecar from git; commit the `.cook` change.
 
-## Open decisions
+## Backlog tickets
 
-Answer these when convenient; until then the provisional defaults in parentheses apply.
+GitHub Issues couldn’t be created from this agent token (same limitation as other deploy-key flows). File these on the repo when convenient—or treat the items below as the tickets until then.
 
-1. **Phase 2 trigger** — When do we move to R2? (Provisional: when total committed recipe images exceed ~20 MB, or sooner if Pages deploys feel heavy.)
-2. **Source scans vs heroes** — What should we do with cookbook-page photos used for transcription? (Provisional: do not use them as public heroes going forward; keep transcription assets out of the site or clearly separate.)
-3. **Frontmatter in Phase 1** — Should we start setting `image:` even while files are still sidecars? (Provisional: no—rely on sidecars until R2.)
-4. **Slug for R2 paths** — Derive `<slug>` from the `.cook` filename stem (lowercased, spaces → hyphens), or add an explicit `slug:` in frontmatter? (Provisional: derive from filename.)
-5. **Preferred format** — WebP, JPEG, or either if small enough? (Provisional: either; prefer WebP when easy.)
+### Ticket: Drop source-scan hero — Macarons au Chocolat
+
+- **Why:** `recipes/Macarons au Chocolat.jpg` is a printed-page scan, not a plated hero; CookCLI still treats it as the recipe image.
+- **Do:** Remove or relocate the sidecar so it is not the public hero; keep transcription provenance in `source:` / notes as needed. Add a real hero later via Phase 1 or 2.
+- **Related:** `recipes/Macarons au Chocolat.cook`
+
+### Ticket: Drop source-scan hero — Ganaches au Chocolat
+
+- **Why:** Same as macarons — source-page photo used as sidecar hero.
+- **Do:** Remove or relocate so it isn’t the public recipe image; real hero later.
+- **Related:** `recipes/Ganaches au Chocolat.cook`
