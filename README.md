@@ -21,12 +21,18 @@ brew install cookcli
 | [Coq au Vin](recipes/Coq%20au%20Vin.cook) | [Ina Garten / Food Network](https://www.foodnetwork.com/recipes/ina-garten/coq-au-vin-recipe4-2011654) |
 | [Skillet Lemon Dill Chicken Thighs](recipes/Skillet%20Lemon%20Dill%20Chicken%20Thighs.cook) | [Damn Delicious](https://damndelicious.net/2019/09/24/skillet-lemon-dill-chicken-thighs/) |
 | [Vegetarian Shepherd's Pie](recipes/Vegetarian%20Shepherds%20Pie.cook) | [Feasting At Home](https://www.feastingathome.com/vegetarian-shepherds-pie/) |
+| [Macarons au Chocolat](recipes/Macarons%20au%20Chocolat.cook) | Personal cookbook photo (fills with ganache) |
+| [Ganaches au Chocolat](recipes/Ganaches%20au%20Chocolat.cook) | Personal cookbook photo |
+| [Pizza Sauce](recipes/Pizza%20Sauce.cook) | [Food Wishes](https://foodwishes.blogspot.com/2012/02/pizza-sauce-lets-play-hide-little-fish.html) |
 
 ## Shopping list
 
+Run from `recipes/` (needed so recipe-to-recipe references resolve), or pass `--base-path`:
+
 ```bash
-cook shopping-list "recipes/Creamy Chicken Marsala.cook"
-cook shopping-list recipes/*.cook
+cd recipes && cook shopping-list "Creamy Chicken Marsala.cook"
+cook shopping-list --base-path recipes "Macarons au Chocolat.cook"
+cook shopping-list --base-path recipes *.cook
 ```
 
 ## Compose recipes
@@ -34,10 +40,10 @@ cook shopping-list recipes/*.cook
 Reference another recipe like an ingredient. Paths are relative to the recipes root, without the `.cook` extension:
 
 ```cook
-Frost with @./frostings/Chocolate Buttercream{1%batch}.
+Sandwich pairs with @./Ganaches au Chocolat{}.
 ```
 
-Shopping lists expand referenced recipes into their ingredients.
+Shopping lists expand referenced recipes into their ingredients (e.g. macarons pull in ganache chocolate + cream).
 
 ## Static site
 
