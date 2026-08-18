@@ -11,31 +11,58 @@ brew install cookcli
 # or download a release binary from GitHub
 ```
 
+## Recipe chapters
+
+Recipes live under `recipes/` in book-style folders. Paths in recipe-to-recipe references are relative to `recipes/` (no `.cook` extension):
+
+| Folder | Role |
+| --- | --- |
+| `breakfast/` | Morning staples |
+| `appetizers/` | Dips and starters |
+| `soups/` | Soups |
+| `mains/` | Weeknight and dinner mains |
+| `pizza/` | Dough-topped meals |
+| `basics/` | Shared components (sauces, fillings) |
+| `desserts/` | Sweets |
+
+### Taxonomy
+
+Keep frontmatter consistent so search, shopping, and a future printed book stay sane:
+
+| Key | Canonical values / notes |
+| --- | --- |
+| `course` | `breakfast`, `appetizer`, `soup`, `main`, `sauce`, `component`, `dessert` |
+| `cuisine` | Primary cuisine string (e.g. `Italian`, `French`, `American`) |
+| `tags` | Free-form; prefer lowercase. Use for protein, method, diet (`vegetarian`, `gluten-free`), season (`fall`), and workflow (`transcription-review`) |
+| `source` / `author` / `changes` | See [Attribution and changes](#attribution-and-changes) |
+
+Prefer `course: main` over `dinner`. Put reusable building blocks in `basics/` (`sauce` or `component`).
+
 ## Recipes
 
 | Recipe | Source |
 | --- | --- |
-| [Easy Creamy Chicken Marsala](recipes/Creamy%20Chicken%20Marsala.cook) | [Cafe Delites](https://cafedelites.com/creamy-chicken-marsala/) |
-| [Chicken in White Wine Sauce](recipes/Chicken%20in%20White%20Wine%20Sauce.cook) (fake Marsala) | [Kitchen Sanctuary](https://www.kitchensanctuary.com/chicken-with-creamy-white-wine-garlic-sauce/) |
-| [Chipotle Chicken Quinoa Burrito Bowl](recipes/Chipotle%20Chicken%20Quinoa%20Burrito%20Bowl.cook) | [EatingWell](https://www.eatingwell.com/recipe/254609/chipotle-chicken-quinoa-burrito-bowl/) |
-| [Coq au Vin](recipes/Coq%20au%20Vin.cook) | [Ina Garten / Food Network](https://www.foodnetwork.com/recipes/ina-garten/coq-au-vin-recipe4-2011654) |
-| [Skillet Lemon Dill Chicken Thighs](recipes/Skillet%20Lemon%20Dill%20Chicken%20Thighs.cook) | [Damn Delicious](https://damndelicious.net/2019/09/24/skillet-lemon-dill-chicken-thighs/) |
-| [Vegetarian Shepherd's Pie](recipes/Vegetarian%20Shepherds%20Pie.cook) | [Feasting At Home](https://www.feastingathome.com/vegetarian-shepherds-pie/) |
-| [Macarons au Chocolat](recipes/Macarons%20au%20Chocolat.cook) | Personal cookbook photo (fills with ganache) |
-| [Ganaches au Chocolat](recipes/Ganaches%20au%20Chocolat.cook) | Personal cookbook photo |
-| [Pizza Sauce](recipes/Pizza%20Sauce.cook) | [Food Wishes](https://foodwishes.blogspot.com/2012/02/pizza-sauce-lets-play-hide-little-fish.html) |
-| [Perfect Pizza (Margherita)](recipes/Perfect%20Pizza%20Margherita.cook) | [Gennaro Contaldo / Food Tube](https://youtu.be/1-SJGQ2HLp8) |
-| [Olive Garden Chicken Gnocchi Soup](recipes/Olive%20Garden%20Chicken%20Gnocchi%20Soup.cook) | [Tornadough Alli](https://tornadoughalli.com/olive-garden-chicken-gnocchi-soup/) |
-| [One Pan Jambalaya](recipes/One%20Pan%20Jambalaya.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/one-pan-jambalaya/) |
-| [Roasted Chile Rellenos with Black Beans](recipes/Roasted%20Chile%20Rellenos%20with%20Black%20Beans.cook) | [Feasting At Home](https://www.feastingathome.com/roasted-chile-rellenos-with-black-beans/) |
-| [Tomato Basil Chicken Fettuccine](recipes/Tomato%20Basil%20Chicken%20Fettuccine.cook) | [Damn Delicious](https://damndelicious.net/2016/02/02/tomato-basil-chicken-fettuccine/) |
-| [Overnight Oats](recipes/Overnight%20Oats.cook) | [Feel Good Foodie](https://feelgoodfoodie.net/recipe/overnight-oats/) |
-| [Pumpkin Mac and Cheese with Roasted Veggies](recipes/Pumpkin%20Mac%20and%20Cheese%20with%20Roasted%20Veggies.cook) | [Skinnytaste](https://www.skinnytaste.com/pumpkin-mac-and-cheese-with-roasted-veggies/) |
-| [Fluffy Pancakes](recipes/Fluffy%20Pancakes.cook) | [Laura Fuentes](https://www.laurafuentes.com/fluffy-pancakes-recipe/) |
-| [Turkey Burgers](recipes/Turkey%20Burgers.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/turkey-burgers/) |
-| [Thai Peanut Noodles](recipes/Thai%20Peanut%20Noodles.cook) | [Tornadough Alli](https://tornadoughalli.com/thai-peanut-noodles/) |
-| [Artichoke Dip](recipes/Artichoke%20Dip.cook) | Personal |
-| [Pumpkin Pizza](recipes/Pumpkin%20Pizza.cook) | Runner's World Vegetarian Cookbook (annotated) — [transcription review](transcription-reviews/pumpkin-pizza.md) |
+| [Easy Creamy Chicken Marsala](recipes/mains/Creamy%20Chicken%20Marsala.cook) | [Cafe Delites](https://cafedelites.com/creamy-chicken-marsala/) |
+| [Chicken in White Wine Sauce](recipes/mains/Chicken%20in%20White%20Wine%20Sauce.cook) (fake Marsala) | [Kitchen Sanctuary](https://www.kitchensanctuary.com/chicken-with-creamy-white-wine-garlic-sauce/) |
+| [Chipotle Chicken Quinoa Burrito Bowl](recipes/mains/Chipotle%20Chicken%20Quinoa%20Burrito%20Bowl.cook) | [EatingWell](https://www.eatingwell.com/recipe/254609/chipotle-chicken-quinoa-burrito-bowl/) |
+| [Coq au Vin](recipes/mains/Coq%20au%20Vin.cook) | [Ina Garten / Food Network](https://www.foodnetwork.com/recipes/ina-garten/coq-au-vin-recipe4-2011654) |
+| [Skillet Lemon Dill Chicken Thighs](recipes/mains/Skillet%20Lemon%20Dill%20Chicken%20Thighs.cook) | [Damn Delicious](https://damndelicious.net/2019/09/24/skillet-lemon-dill-chicken-thighs/) |
+| [Vegetarian Shepherd's Pie](recipes/mains/Vegetarian%20Shepherds%20Pie.cook) | [Feasting At Home](https://www.feastingathome.com/vegetarian-shepherds-pie/) |
+| [Macarons au Chocolat](recipes/desserts/Macarons%20au%20Chocolat.cook) | Personal cookbook photo (fills with ganache) |
+| [Ganaches au Chocolat](recipes/basics/Ganaches%20au%20Chocolat.cook) | Personal cookbook photo |
+| [Pizza Sauce](recipes/basics/Pizza%20Sauce.cook) | [Food Wishes](https://foodwishes.blogspot.com/2012/02/pizza-sauce-lets-play-hide-little-fish.html) |
+| [Perfect Pizza (Margherita)](recipes/pizza/Perfect%20Pizza%20Margherita.cook) | [Gennaro Contaldo / Food Tube](https://youtu.be/1-SJGQ2HLp8) |
+| [Olive Garden Chicken Gnocchi Soup](recipes/soups/Olive%20Garden%20Chicken%20Gnocchi%20Soup.cook) | [Tornadough Alli](https://tornadoughalli.com/olive-garden-chicken-gnocchi-soup/) |
+| [One Pan Jambalaya](recipes/mains/One%20Pan%20Jambalaya.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/one-pan-jambalaya/) |
+| [Roasted Chile Rellenos with Black Beans](recipes/mains/Roasted%20Chile%20Rellenos%20with%20Black%20Beans.cook) | [Feasting At Home](https://www.feastingathome.com/roasted-chile-rellenos-with-black-beans/) |
+| [Tomato Basil Chicken Fettuccine](recipes/mains/Tomato%20Basil%20Chicken%20Fettuccine.cook) | [Damn Delicious](https://damndelicious.net/2016/02/02/tomato-basil-chicken-fettuccine/) |
+| [Overnight Oats](recipes/breakfast/Overnight%20Oats.cook) | [Feel Good Foodie](https://feelgoodfoodie.net/recipe/overnight-oats/) |
+| [Pumpkin Mac and Cheese with Roasted Veggies](recipes/mains/Pumpkin%20Mac%20and%20Cheese%20with%20Roasted%20Veggies.cook) | [Skinnytaste](https://www.skinnytaste.com/pumpkin-mac-and-cheese-with-roasted-veggies/) |
+| [Fluffy Pancakes](recipes/breakfast/Fluffy%20Pancakes.cook) | [Laura Fuentes](https://www.laurafuentes.com/fluffy-pancakes-recipe/) |
+| [Turkey Burgers](recipes/mains/Turkey%20Burgers.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/turkey-burgers/) |
+| [Thai Peanut Noodles](recipes/mains/Thai%20Peanut%20Noodles.cook) | [Tornadough Alli](https://tornadoughalli.com/thai-peanut-noodles/) |
+| [Artichoke Dip](recipes/appetizers/Artichoke%20Dip.cook) | Personal |
+| [Pumpkin Pizza](recipes/pizza/Pumpkin%20Pizza.cook) | Runner's World Vegetarian Cookbook (annotated) — [transcription review](transcription-reviews/pumpkin-pizza.md) |
 
 ## Attribution and changes
 
@@ -69,23 +96,40 @@ Deep provenance (book photos, handwriting) can still use `transcription-reviews/
 
 ## Shopping list
 
-Run from `recipes/` (needed so recipe-to-recipe references resolve), or pass `--base-path`:
+CookCLI loads `config/aisle.conf` automatically when you run from the repo root (or pass `-a config/aisle.conf`). Lists group ingredients by store section.
 
 ```bash
-cd recipes && cook shopping-list "Creamy Chicken Marsala.cook"
-cook shopping-list --base-path recipes "Macarons au Chocolat.cook"
-cook shopping-list --base-path recipes *.cook
+cook shopping-list --base-path recipes "mains/Creamy Chicken Marsala.cook"
+cook shopping-list --base-path recipes "desserts/Macarons au Chocolat.cook"
+cook shopping-list --base-path recipes recipes/mains/*.cook
 ```
+
+After adding recipes, check for uncategorized ingredients:
+
+```bash
+cook doctor aisle --base-path "$(pwd)/recipes"
+```
+
+Use an absolute `--base-path` for `doctor aisle` when recipes are nested (a CookCLI quirk with `-b .`). Section names and aliases in `aisle.conf` should be tuned to your usual store; the checked-in file is a working default.
 
 ## Compose recipes
 
 Reference another recipe like an ingredient. Paths are relative to the recipes root, without the `.cook` extension:
 
 ```cook
-Sandwich pairs with @./Ganaches au Chocolat{}.
+Sandwich pairs with @./basics/Ganaches au Chocolat{}.
 ```
 
 Shopping lists expand referenced recipes into their ingredients (e.g. macarons pull in ganache chocolate + cream).
+
+## Doctor (CI)
+
+GitHub Actions runs `cook doctor validate --strict` on pushes and pull requests (see `.github/workflows/doctor.yml`). Locally:
+
+```bash
+cook doctor validate --strict --base-path "$(pwd)/recipes"
+cook doctor aisle --base-path "$(pwd)/recipes"
+```
 
 ## View on phone (recommended)
 

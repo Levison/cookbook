@@ -1,9 +1,9 @@
 # Transcription review: Pumpkin Pizza
 
 **Status:** needs human double-check against the cookbook photo  
-**Recipe file:** [`recipes/Pumpkin Pizza.cook`](../recipes/Pumpkin%20Pizza.cook)  
+**Recipe file:** [`recipes/pizza/Pumpkin Pizza.cook`](../recipes/pizza/Pumpkin%20Pizza.cook)  
 **Printed source:** *The Runner's World Vegetarian Cookbook*, p. 144 — “Smoky Squash Flatbread with Balsamic Glaze”  
-**Working title (handwritten):** “or PUMPKIN PIZZA (sounds way better)”  
+**Working title (handwritten):** “or PUMPKIN PIZZA (sounds way better)”
 **Canonical change list:** frontmatter `changes` (and `origin_title`) in the `.cook` file — keep that list in sync when editing this review.
 
 ## What was treated as correct (handwritten)
