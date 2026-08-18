@@ -158,11 +158,13 @@ Bookmark that on a phone. Search works in the browser; no app install.
 ### One-time GitHub Pages setup
 
 1. Merge this workflow (`.github/workflows/publish.yml`).
-2. Repo **Settings → Pages → Build and deployment → Source**: choose **GitHub Actions**.
+2. Repo **Settings → Pages → Build and deployment → Source**: choose **GitHub Actions** (not “Deploy from a branch”).
 3. Push to the default branch (or run the **Publish Recipes** workflow manually under Actions).
 4. After the workflow is green, the site is live at the URL above.
 
 Every later recipe push rebuilds the site automatically.
+
+If the URL shows this README (Jekyll) instead of recipe cards, or `/plan.html` / `/grocery.html` 404, Pages is still on **Deploy from a branch**. Switch Source to **GitHub Actions**, then re-run **Publish Recipes**. No recipe rollback is needed — the Cooklang site is already built by that workflow.
 
 ### Local preview
 

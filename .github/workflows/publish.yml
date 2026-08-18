@@ -1,5 +1,6 @@
 # Build Cooklang recipes into a static site and publish to GitHub Pages.
-# One-time setup: Settings → Pages → Source = GitHub Actions
+# Required: Settings → Pages → Build and deployment → Source = GitHub Actions
+# (Deploy from a branch serves the README via Jekyll and hides Plan/Grocery.)
 # Live URL: https://levison.github.io/cookbook/
 
 name: Publish Recipes
@@ -54,3 +55,27 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      # Branch-based Pages (Jekyll) overwrites this deploy with README.md.
+      - name: Verify Pages source is GitHub Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pages_url="https://github.com/${GITHUB_REPOSITORY}/settings/pages"
+          build_type="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .build_type)"
+          source="$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.source | "\(.branch // "n/a")\(.path // "")"')"
+          if [[ "$build_type" == "workflow" ]]; then
+            echo "Pages source is GitHub Actions (ok)."
+            exit 0
+          fi
+          {
+            echo "::error title=GitHub Pages source is wrong::Source is Deploy from a branch (${source}), not GitHub Actions."
+            echo "The recipe site (Plan, Grocery, cook build) was uploaded, but branch/Jekyll publish"
+            echo "is serving README.md at https://levison.github.io/cookbook/ instead."
+            echo ""
+            echo "Fix (one time): ${pages_url}"
+            echo "  Build and deployment → Source → GitHub Actions"
+            echo "Then re-run this workflow (or push to main)."
+          } >&2
+          exit 1
