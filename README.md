@@ -1,6 +1,6 @@
 # Cookbook
 
-A static, git-backed cookbook in [Cooklang](https://cooklang.org/). Recipes live as plain `.cook` files; use CookCLI for shopping lists and static site builds.
+A static, git-backed cookbook in [Cooklang](https://cooklang.org/). Recipes live as plain `.cook` files; use CookCLI for shopping lists and a phone-friendly site on GitHub Pages.
 
 ## Setup
 
@@ -57,15 +57,42 @@ Sandwich pairs with @./Ganaches au Chocolat{}.
 
 Shopping lists expand referenced recipes into their ingredients (e.g. macarons pull in ganache chocolate + cream).
 
-## Static site
+## View on phone (recommended)
+
+Skip the GitHub file browser — `.cook` files are plain text there. This repo builds a real recipe website with `cook build web` and publishes it free on **GitHub Pages**.
+
+Once Pages is on, open:
+
+**https://levison.github.io/cookbook/**
+
+Bookmark that on a phone. Search works in the browser; no app install.
+
+### One-time GitHub Pages setup
+
+1. Merge this workflow (`.github/workflows/publish.yml`).
+2. Repo **Settings → Pages → Build and deployment → Source**: choose **GitHub Actions**.
+3. Push to the default branch (or run the **Publish Recipes** workflow manually under Actions).
+4. After the workflow is green, the site is live at the URL above.
+
+Every later recipe push rebuilds the site automatically.
+
+### Local preview
 
 ```bash
 cook build web --base-path recipes
-# opens as ./_site — host on GitHub Pages, Netlify, or open locally
+# open ./_site/index.html in a browser
 ```
 
-For day-of cooking (scaling, interactive shopping list), use:
+For day-of cooking on your own machine (scaling, interactive shopping list):
 
 ```bash
 cook server --path recipes
 ```
+
+### Why not a wiki?
+
+A GitHub wiki is still markdown/plain text — it will not render Cooklang ingredients, timers, or steps nicely. Pages with `cook build web` is the free, git-hosted option that matches this format.
+
+### No-setup alternative
+
+Because the repo is public, you can also paste it into [gitcook.ing](https://gitcook.ing/) for a quick web viewer. Prefer GitHub Pages for a stable link your household can bookmark.
