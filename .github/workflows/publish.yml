@@ -41,6 +41,9 @@ jobs:
           --repo-url https://github.com/Levison/cookbook
           --sitemap https://levison.github.io/cookbook
 
+      - name: Add mobile grocery list
+        run: bash site-enhancements/inject.sh ./_site
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

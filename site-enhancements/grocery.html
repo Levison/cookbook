@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grocery - Cookbook</title>
+    <link rel="icon" type="image/x-icon" href="__BASE__/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="__BASE__/static/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="__BASE__/static/apple-touch-icon.png">
+    <link rel="manifest" href="__BASE__/static/site.webmanifest">
+    <link href="__BASE__/static/css/output.css" rel="stylesheet">
+    <link href="__BASE__/static/css/custom-styles.css" rel="stylesheet">
+    <link href="__BASE__/static/css/grocery.css" rel="stylesheet">
+    <script>
+        const theme = localStorage.getItem('theme')
+            || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+    </script>
+    <style>
+        .viewport {
+            width: 100%;
+            max-width: 72rem;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .dark body { background-color: #111827; }
+        .dark .bg-white { background-color: #1f2937; }
+        .dark .text-gray-900 { color: #f9fafb; }
+        .dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,.4); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="viewport">
+        <nav class="bg-white shadow-lg rounded-2xl mb-8 relative">
+            <div class="px-4 py-3 flex items-center justify-between gap-3">
+                <a href="__BASE__/index.html" class="font-bold text-orange-600">Cookbook</a>
+                <div class="flex items-center gap-2">
+                    <a href="__BASE__/index.html" class="nav-pill">Recipes</a>
+                    <a href="__BASE__/grocery.html" class="nav-pill active grocery-nav-link">
+                        Grocery <span class="grocery-badge" aria-hidden="true">0</span>
+                    </a>
+                    <button onclick="(function(){const d=document.documentElement;const next=!d.classList.contains('dark');d.classList.toggle('dark',next);localStorage.setItem('theme',next?'dark':'light');})()"
+                            class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700"
+                            aria-label="Toggle theme">◐</button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="bg-white rounded-2xl shadow-lg p-6 grocery-page">
+            <div id="grocery-root"></div>
+        </main>
+    </div>
+    <script src="__BASE__/static/js/grocery.js"></script>
+</body>
+</html>
