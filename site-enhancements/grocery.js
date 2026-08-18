@@ -1,11 +1,23 @@
 /**
- * Mobile grocery list for CookCLI static recipe pages.
- * Check ingredients on a recipe → Export to grocery → shop from /grocery.html
+ * Mobile grocery list + weekly recipe plan for CookCLI static pages.
+ *
+ * Plan page: select whole recipes → add expanded ingredients to grocery.
+ * Recipe page: add the whole recipe (or a pantry-filtered subset).
+ * Grocery page: check off while shopping; grouped by aisle when available.
  */
 (function () {
   'use strict';
 
   var STORAGE_KEY = 'cookbook-grocery-v1';
+  var CHAPTER_LABELS = {
+    appetizers: 'Appetizers',
+    basics: 'Basics',
+    breakfast: 'Breakfast',
+    desserts: 'Desserts',
+    mains: 'Mains',
+    pizza: 'Pizza',
+    soups: 'Soups'
+  };
 
   function basePath() {
     var script = document.querySelector('script[src*="grocery.js"]');
@@ -28,6 +40,14 @@
 
   function groceryUrl() {
     return basePath() + '/grocery.html';
+  }
+
+  function planUrl() {
+    return basePath() + '/plan.html';
+  }
+
+  function manifestUrl() {
+    return basePath() + '/static/data/recipes-manifest.json';
   }
 
   function loadCart() {
@@ -83,33 +103,61 @@
     });
   }
 
+  function makeNavPill(href, label, extraClass, active) {
+    var a = document.createElement('a');
+    a.href = href;
+    a.className = 'nav-pill ' + (extraClass || '');
+    if (active) a.classList.add('active');
+    a.innerHTML = label;
+    return a;
+  }
+
   function ensureNavLink() {
-    if (document.querySelector('a.grocery-nav-link')) {
-      updateBadges();
-      return;
+    var path = window.location.pathname;
+    var isGroceryPage = path.indexOf('/grocery') !== -1;
+    var isPlanPage = path.indexOf('/plan') !== -1;
+
+    if (!document.querySelector('a.grocery-plan-nav-link')) {
+      var desktopRow = document.querySelector('nav a.nav-pill');
+      if (desktopRow && desktopRow.parentElement) {
+        var plan = makeNavPill(planUrl(), 'Plan', 'grocery-plan-nav-link', isPlanPage);
+        desktopRow.parentElement.appendChild(plan);
+      }
+
+      var mobileRecipes = document.querySelector('#more-dropdown a[href*="index.html"]');
+      if (mobileRecipes && mobileRecipes.parentElement) {
+        var mPlan = document.createElement('a');
+        mPlan.href = planUrl();
+        mPlan.className =
+          'grocery-plan-nav-link flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-semibold';
+        mPlan.textContent = 'Plan';
+        mobileRecipes.insertAdjacentElement('afterend', mPlan);
+      }
     }
 
-    var href = groceryUrl();
-    var isGroceryPage = window.location.pathname.indexOf('/grocery') !== -1;
+    if (!document.querySelector('a.grocery-nav-link')) {
+      var desktopAnchor = document.querySelector('nav a.grocery-plan-nav-link') || document.querySelector('nav a.nav-pill');
+      if (desktopAnchor && desktopAnchor.parentElement) {
+        var grocery = makeNavPill(
+          groceryUrl(),
+          'Grocery <span class="grocery-badge" aria-hidden="true">0</span>',
+          'grocery-nav-link',
+          isGroceryPage
+        );
+        desktopAnchor.parentElement.appendChild(grocery);
+      }
 
-    var desktopRow = document.querySelector('nav a.nav-pill');
-    if (desktopRow && desktopRow.parentElement) {
-      var a = document.createElement('a');
-      a.href = href;
-      a.className = 'nav-pill grocery-nav-link';
-      if (isGroceryPage) a.classList.add('active');
-      a.innerHTML = 'Grocery <span class="grocery-badge" aria-hidden="true">0</span>';
-      desktopRow.parentElement.appendChild(a);
-    }
-
-    var mobileRecipes = document.querySelector('#more-dropdown a[href*="index.html"]');
-    if (mobileRecipes && mobileRecipes.parentElement) {
-      var m = document.createElement('a');
-      m.href = href;
-      m.className =
-        'grocery-nav-link flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-semibold';
-      m.innerHTML = 'Grocery <span class="grocery-badge" aria-hidden="true">0</span>';
-      mobileRecipes.insertAdjacentElement('afterend', m);
+      var mobilePlan = document.querySelector('#more-dropdown a.grocery-plan-nav-link');
+      var mobileRecipesLink = document.querySelector('#more-dropdown a[href*="index.html"]');
+      var mobileInsertAfter = mobilePlan || mobileRecipesLink;
+      if (mobileInsertAfter && mobileInsertAfter.parentElement) {
+        var m = document.createElement('a');
+        m.href = groceryUrl();
+        m.className =
+          'grocery-nav-link flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-semibold';
+        m.innerHTML = 'Grocery <span class="grocery-badge" aria-hidden="true">0</span>';
+        mobileInsertAfter.insertAdjacentElement('afterend', m);
+      }
     }
 
     updateBadges();
@@ -133,7 +181,6 @@
 
     panel.querySelectorAll('ul').forEach(function (ul) {
       if (ul.classList.contains('cookware-list')) return;
-      // Keep lists that appear before the Cookware heading
       if (cookware && !(ul.compareDocumentPosition(cookware) & Node.DOCUMENT_POSITION_FOLLOWING)) {
         return;
       }
@@ -158,20 +205,63 @@
     return { name: name, quantity: qty };
   }
 
+  function appendItemsToCart(selected) {
+    if (!selected.length) {
+      return { added: 0, skipped: 0 };
+    }
+
+    var cart = loadCart();
+    var existing = {};
+    cart.forEach(function (item) {
+      existing[item.id] = true;
+    });
+
+    var added = 0;
+    selected.forEach(function (item) {
+      if (existing[item.id]) return;
+      cart.push(item);
+      existing[item.id] = true;
+      added += 1;
+    });
+
+    saveCart(cart);
+    return { added: added, skipped: selected.length - added };
+  }
+
+  function cartItemFromIngredient(ing, recipeMeta) {
+    var qty = ing.quantity || '';
+    var aisle = ing.aisle || '';
+    return {
+      id: recipeMeta.path + '::' + ing.name + '::' + qty,
+      name: ing.name,
+      quantity: qty,
+      aisle: aisle,
+      recipe: recipeMeta.title,
+      recipePath: recipeMeta.path,
+      recipeId: recipeMeta.id || '',
+      bought: false,
+      addedAt: Date.now()
+    };
+  }
+
   function enhanceRecipePage() {
     var found = findIngredientLists();
     if (!found.heading || !found.lists.length) return;
 
     var hint = document.createElement('p');
     hint.className = 'grocery-hint print:hidden';
-    hint.textContent = 'Uncheck what you already have, then export the rest to your grocery list.';
+    hint.innerHTML =
+      'Add this whole recipe to your grocery list, or uncheck pantry staples first. ' +
+      'To shop for several meals at once, use <a href="' +
+      planUrl() +
+      '">Plan</a>.';
 
     var toolbar = document.createElement('div');
     toolbar.className = 'grocery-toolbar print:hidden';
     toolbar.innerHTML =
+      '<button type="button" class="grocery-primary" data-grocery-action="export">Add recipe to grocery</button>' +
       '<button type="button" data-grocery-action="all">Select all</button>' +
-      '<button type="button" data-grocery-action="none">Select none</button>' +
-      '<button type="button" class="grocery-primary" data-grocery-action="export">Export to grocery</button>';
+      '<button type="button" data-grocery-action="none">Select none</button>';
 
     found.heading.insertAdjacentElement('afterend', toolbar);
     toolbar.insertAdjacentElement('afterend', hint);
@@ -224,12 +314,12 @@
         return;
       }
       if (action === 'export') {
-        exportChecked();
+        exportCheckedFromPage();
       }
     });
   }
 
-  function exportChecked() {
+  function exportCheckedFromPage() {
     var title = recipeTitle();
     var key = recipeKey();
     var selected = [];
@@ -239,15 +329,13 @@
       if (!cb || !cb.checked) return;
       var parsed = parseIngredientLi(li);
       if (!parsed) return;
-      selected.push({
-        id: key + '::' + parsed.name + '::' + parsed.quantity,
-        name: parsed.name,
-        quantity: parsed.quantity,
-        recipe: title,
-        recipePath: key,
-        bought: false,
-        addedAt: Date.now()
-      });
+      selected.push(
+        cartItemFromIngredient(parsed, {
+          title: title,
+          path: key,
+          id: ''
+        })
+      );
     });
 
     if (!selected.length) {
@@ -255,48 +343,70 @@
       return;
     }
 
-    var cart = loadCart();
-    var existing = {};
-    cart.forEach(function (item) {
-      existing[item.id] = true;
-    });
-
-    var added = 0;
-    selected.forEach(function (item) {
-      if (existing[item.id]) return;
-      cart.push(item);
-      existing[item.id] = true;
-      added += 1;
-    });
-
-    saveCart(cart);
-
-    if (added === 0) {
+    var result = appendItemsToCart(selected);
+    if (result.added === 0) {
       toast('Those items are already on your grocery list');
     } else {
-      toast('Added ' + added + ' item' + (added === 1 ? '' : 's') + ' · open Grocery');
+      toast('Added ' + result.added + ' item' + (result.added === 1 ? '' : 's') + ' · open Grocery');
     }
   }
 
   function formatPlainText(items) {
     if (!items.length) return 'Grocery list is empty.';
     var lines = ['Grocery list', ''];
-    var byRecipe = {};
+    var byAisle = {};
+    var aisleOrder = [];
+
     items.forEach(function (item) {
-      var r = item.recipe || 'Items';
-      if (!byRecipe[r]) byRecipe[r] = [];
-      byRecipe[r].push(item);
+      var a = item.aisle || 'other';
+      if (!byAisle[a]) {
+        byAisle[a] = [];
+        aisleOrder.push(a);
+      }
+      byAisle[a].push(item);
     });
-    Object.keys(byRecipe).forEach(function (recipe) {
-      lines.push(recipe);
-      byRecipe[recipe].forEach(function (item) {
-        var mark = item.bought ? '[x]' : '[ ]';
-        var qty = item.quantity ? ' — ' + item.quantity : '';
-        lines.push(mark + ' ' + item.name + qty);
+
+    var hasAisle = aisleOrder.some(function (a) {
+      return a && a !== 'other';
+    });
+
+    if (hasAisle) {
+      aisleOrder.forEach(function (aisle) {
+        lines.push(titleCaseAisle(aisle));
+        byAisle[aisle].forEach(function (item) {
+          var mark = item.bought ? '[x]' : '[ ]';
+          var qty = item.quantity ? ' — ' + item.quantity : '';
+          var recipe = item.recipe ? ' (' + item.recipe + ')' : '';
+          lines.push(mark + ' ' + item.name + qty + recipe);
+        });
+        lines.push('');
       });
-      lines.push('');
-    });
+    } else {
+      var byRecipe = {};
+      items.forEach(function (item) {
+        var r = item.recipe || 'Items';
+        if (!byRecipe[r]) byRecipe[r] = [];
+        byRecipe[r].push(item);
+      });
+      Object.keys(byRecipe).forEach(function (recipe) {
+        lines.push(recipe);
+        byRecipe[recipe].forEach(function (item) {
+          var mark = item.bought ? '[x]' : '[ ]';
+          var qty = item.quantity ? ' — ' + item.quantity : '';
+          lines.push(mark + ' ' + item.name + qty);
+        });
+        lines.push('');
+      });
+    }
+
     return lines.join('\n').trim() + '\n';
+  }
+
+  function titleCaseAisle(aisle) {
+    if (!aisle) return 'Other';
+    return aisle.replace(/\b\w/g, function (c) {
+      return c.toUpperCase();
+    });
   }
 
   function copyText(text) {
@@ -327,18 +437,38 @@
       navigator
         .share({ title: 'Grocery list', text: text })
         .catch(function () {
-          /* user cancelled — fall through to copy */
           return copyText(text).then(function () {
             toast('Copied grocery list');
           });
         });
       return;
     }
-    copyText(text).then(function () {
-      toast('Copied grocery list');
-    }).catch(function () {
-      toast('Could not copy — try selecting the list');
+    copyText(text)
+      .then(function () {
+        toast('Copied grocery list');
+      })
+      .catch(function () {
+        toast('Could not copy — try selecting the list');
+      });
+  }
+
+  function sortItemsForDisplay(items) {
+    var aisleRank = {};
+    var rank = 0;
+    items.forEach(function (item) {
+      var a = item.aisle || 'other';
+      if (!(a in aisleRank)) aisleRank[a] = rank++;
     });
+    return items
+      .map(function (item, index) {
+        return { item: item, index: index };
+      })
+      .sort(function (a, b) {
+        var aa = a.item.aisle || 'other';
+        var ba = b.item.aisle || 'other';
+        if (aisleRank[aa] !== aisleRank[ba]) return aisleRank[aa] - aisleRank[ba];
+        return (a.item.name || '').localeCompare(b.item.name || '');
+      });
   }
 
   function renderGroceryPage() {
@@ -355,10 +485,18 @@
 
       var sub = document.createElement('p');
       sub.className = 'grocery-sub';
-      sub.textContent =
-        items.length === 0
-          ? 'Nothing here yet. Open a recipe, uncheck pantry staples, and tap Export to grocery.'
-          : items.length + ' item' + (items.length === 1 ? '' : 's') + ' · tap to check off while shopping';
+      if (items.length === 0) {
+        sub.innerHTML =
+          'Nothing here yet. <a href="' +
+          planUrl() +
+          '">Plan</a> a few recipes for the week, or open a recipe and tap <strong>Add recipe to grocery</strong>.';
+      } else {
+        sub.textContent =
+          items.length +
+          ' item' +
+          (items.length === 1 ? '' : 's') +
+          ' · tap to check off while shopping';
+      }
       root.appendChild(sub);
 
       var actions = document.createElement('div');
@@ -371,22 +509,88 @@
       }
       actions.innerHTML +=
         '<a href="' +
+        planUrl() +
+        '" class="grocery-inline-link">← Plan recipes</a>' +
+        '<a href="' +
         (basePath() || '') +
-        '/index.html" class="grocery-nav-link" style="align-self:center;font-weight:600;color:#ea580c;text-decoration:underline;">← Recipes</a>';
+        '/index.html" class="grocery-inline-link">Recipes</a>';
       root.appendChild(actions);
 
       if (!items.length) {
         var empty = document.createElement('div');
         empty.className = 'grocery-empty';
-        empty.textContent = 'Your grocery list is empty.';
+        empty.innerHTML =
+          'Your grocery list is empty.<br><a href="' + planUrl() + '">Select recipes for the week →</a>';
         root.appendChild(empty);
         updateBadges();
         return;
       }
 
-      var ul = document.createElement('ul');
-      ul.className = 'grocery-list';
-      items.forEach(function (item, index) {
+      var recipesOnList = {};
+      items.forEach(function (item) {
+        if (item.recipe) recipesOnList[item.recipe] = (recipesOnList[item.recipe] || 0) + 1;
+      });
+      var recipeNames = Object.keys(recipesOnList);
+      if (recipeNames.length) {
+        var recipeBar = document.createElement('div');
+        recipeBar.className = 'grocery-recipe-bar print:hidden';
+        recipeBar.innerHTML =
+          '<span class="grocery-recipe-bar-label">' +
+          recipeNames.length +
+          ' recipe' +
+          (recipeNames.length === 1 ? '' : 's') +
+          ':</span> ';
+        recipeNames.forEach(function (name) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'grocery-recipe-chip';
+          chip.textContent = name + ' ×';
+          chip.title = 'Remove all items from ' + name;
+          chip.addEventListener('click', function () {
+            if (!confirm('Remove all grocery items from “' + name + '”?')) return;
+            saveCart(
+              loadCart().filter(function (item) {
+                return item.recipe !== name;
+              })
+            );
+            draw();
+            toast('Removed ' + name);
+          });
+          recipeBar.appendChild(chip);
+        });
+        root.appendChild(recipeBar);
+      }
+
+      var sorted = sortItemsForDisplay(items);
+      var listWrap = document.createElement('div');
+      listWrap.className = 'grocery-list-wrap';
+
+      var currentAisle = null;
+      var ul = null;
+      var hasRealAisle = items.some(function (item) {
+        return item.aisle && item.aisle !== 'other';
+      });
+
+      sorted.forEach(function (entry) {
+        var item = entry.item;
+        var index = entry.index;
+        var aisle = item.aisle || 'other';
+
+        if (hasRealAisle && aisle !== currentAisle) {
+          currentAisle = aisle;
+          var h2 = document.createElement('h2');
+          h2.className = 'grocery-aisle-heading';
+          h2.textContent = titleCaseAisle(aisle);
+          listWrap.appendChild(h2);
+          ul = document.createElement('ul');
+          ul.className = 'grocery-list';
+          listWrap.appendChild(ul);
+        } else if (!ul) {
+          ul = document.createElement('ul');
+          ul.className = 'grocery-list';
+          listWrap.appendChild(ul);
+        }
+
         var li = document.createElement('li');
         if (item.bought) li.classList.add('is-bought');
 
@@ -439,7 +643,7 @@
         li.appendChild(remove);
         ul.appendChild(li);
       });
-      root.appendChild(ul);
+      root.appendChild(listWrap);
 
       actions.addEventListener('click', function (e) {
         var btn = e.target.closest('button[data-act]');
@@ -471,9 +675,248 @@
     draw();
   }
 
+  var manifestCache = null;
+
+  function loadManifest() {
+    if (manifestCache) return Promise.resolve(manifestCache);
+    return fetch(manifestUrl())
+      .then(function (res) {
+        if (!res.ok) throw new Error('manifest ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        manifestCache = data;
+        return data;
+      });
+  }
+
+  function chapterLabel(chapter) {
+    return CHAPTER_LABELS[chapter] || titleCaseAisle(chapter);
+  }
+
+  function renderPlanPage() {
+    var root = document.getElementById('plan-root');
+    if (!root) return;
+
+    root.innerHTML =
+      '<h1>Plan</h1>' +
+      '<p class="grocery-sub">Select whole recipes for the week, then add them to your grocery list in one tap.</p>' +
+      '<p class="grocery-loading">Loading recipes…</p>';
+
+    loadManifest()
+      .then(function (data) {
+        drawPlan(root, data);
+      })
+      .catch(function () {
+        root.innerHTML =
+          '<h1>Plan</h1>' +
+          '<div class="grocery-empty">Could not load the recipe list. Rebuild the site with <code>inject.sh</code>.</div>';
+      });
+  }
+
+  function drawPlan(root, data) {
+    var selected = {};
+
+    function selectedIds() {
+      return Object.keys(selected).filter(function (id) {
+        return selected[id];
+      });
+    }
+
+    function redraw() {
+      var ids = selectedIds();
+      root.innerHTML = '';
+
+      var title = document.createElement('h1');
+      title.textContent = 'Plan';
+      root.appendChild(title);
+
+      var sub = document.createElement('p');
+      sub.className = 'grocery-sub';
+      sub.textContent =
+        'Select whole recipes for the week, then add them to your grocery list in one tap. Composed recipes expand into their ingredients.';
+      root.appendChild(sub);
+
+      var toolbar = document.createElement('div');
+      toolbar.className = 'plan-toolbar print:hidden';
+      toolbar.innerHTML =
+        '<button type="button" data-plan="all">Select all</button>' +
+        '<button type="button" data-plan="none">Clear selection</button>' +
+        '<a href="' +
+        groceryUrl() +
+        '" class="grocery-inline-link">View grocery →</a>';
+      root.appendChild(toolbar);
+
+      var byChapter = {};
+      (data.chapters || []).forEach(function (ch) {
+        byChapter[ch] = [];
+      });
+      (data.recipes || []).forEach(function (recipe) {
+        if (!byChapter[recipe.chapter]) byChapter[recipe.chapter] = [];
+        byChapter[recipe.chapter].push(recipe);
+      });
+
+      Object.keys(byChapter)
+        .sort()
+        .forEach(function (chapter) {
+          var recipes = byChapter[chapter];
+          if (!recipes.length) return;
+
+          var section = document.createElement('section');
+          section.className = 'plan-chapter';
+
+          var h2 = document.createElement('h2');
+          h2.className = 'plan-chapter-title';
+          h2.textContent = chapterLabel(chapter);
+          section.appendChild(h2);
+
+          var ul = document.createElement('ul');
+          ul.className = 'plan-recipe-list';
+
+          recipes.forEach(function (recipe) {
+            var li = document.createElement('li');
+            li.className = 'plan-recipe-li';
+            if (selected[recipe.id]) li.classList.add('is-selected');
+
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = !!selected[recipe.id];
+            cb.setAttribute('aria-label', 'Select ' + recipe.title);
+            cb.addEventListener('click', function (e) {
+              e.stopPropagation();
+            });
+            cb.addEventListener('change', function () {
+              selected[recipe.id] = cb.checked;
+              redraw();
+            });
+
+            var body = document.createElement('div');
+            body.className = 'plan-recipe-body';
+
+            var name = document.createElement('span');
+            name.className = 'plan-recipe-name';
+            name.textContent = recipe.title;
+            body.appendChild(name);
+
+            var meta = document.createElement('span');
+            meta.className = 'plan-recipe-meta';
+            meta.textContent =
+              (recipe.ingredientCount || (recipe.ingredients && recipe.ingredients.length) || 0) +
+              ' ingredients';
+            body.appendChild(meta);
+
+            var open = document.createElement('a');
+            open.href = recipe.href;
+            open.className = 'plan-recipe-open';
+            open.textContent = 'View';
+            open.addEventListener('click', function (e) {
+              e.stopPropagation();
+            });
+
+            li.appendChild(cb);
+            li.appendChild(body);
+            li.appendChild(open);
+            li.addEventListener('click', function (e) {
+              if (e.target === cb || e.target === open) return;
+              cb.checked = !cb.checked;
+              cb.dispatchEvent(new Event('change'));
+            });
+            ul.appendChild(li);
+          });
+
+          section.appendChild(ul);
+          root.appendChild(section);
+        });
+
+      var bar = document.createElement('div');
+      bar.className = 'plan-sticky-bar print:hidden';
+      var count = ids.length;
+      bar.innerHTML =
+        '<span class="plan-sticky-count">' +
+        (count === 0
+          ? 'Select recipes for the week'
+          : count + ' recipe' + (count === 1 ? '' : 's') + ' selected') +
+        '</span>' +
+        '<button type="button" class="grocery-primary" data-plan="add"' +
+        (count === 0 ? ' disabled' : '') +
+        '>Add to grocery</button>';
+      root.appendChild(bar);
+
+      toolbar.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-plan]');
+        if (!btn) return;
+        var act = btn.getAttribute('data-plan');
+        if (act === 'all') {
+          (data.recipes || []).forEach(function (r) {
+            selected[r.id] = true;
+          });
+          redraw();
+        } else if (act === 'none') {
+          selected = {};
+          redraw();
+        }
+      });
+
+      bar.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-plan="add"]');
+        if (!btn || btn.disabled) return;
+        addSelectedRecipes();
+      });
+    }
+
+    function addSelectedRecipes() {
+      var ids = selectedIds();
+      var recipeMap = {};
+      (data.recipes || []).forEach(function (r) {
+        recipeMap[r.id] = r;
+      });
+
+      var batch = [];
+      var recipeCount = 0;
+      ids.forEach(function (id) {
+        var recipe = recipeMap[id];
+        if (!recipe || !recipe.ingredients || !recipe.ingredients.length) return;
+        recipeCount += 1;
+        recipe.ingredients.forEach(function (ing) {
+          batch.push(
+            cartItemFromIngredient(ing, {
+              title: recipe.title,
+              path: recipe.href,
+              id: recipe.id
+            })
+          );
+        });
+      });
+
+      if (!batch.length) {
+        toast('No ingredients found for the selected recipes');
+        return;
+      }
+
+      var result = appendItemsToCart(batch);
+      if (result.added === 0) {
+        toast('Those recipes are already on your grocery list');
+      } else {
+        toast(
+          'Added ' +
+            recipeCount +
+            ' recipe' +
+            (recipeCount === 1 ? '' : 's') +
+            ' (' +
+            result.added +
+            ' items) · open Grocery'
+        );
+      }
+    }
+
+    redraw();
+  }
+
   function init() {
     ensureNavLink();
-    if (document.getElementById('grocery-root')) {
+    if (document.getElementById('plan-root')) {
+      renderPlanPage();
+    } else if (document.getElementById('grocery-root')) {
       renderGroceryPage();
     } else if (/\/recipe\//.test(window.location.pathname)) {
       enhanceRecipePage();

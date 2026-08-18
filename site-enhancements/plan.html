@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grocery - Cookbook</title>
+    <title>Plan - Cookbook</title>
     <link rel="icon" type="image/x-icon" href="__BASE__/static/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="__BASE__/static/favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="__BASE__/static/apple-touch-icon.png">
@@ -36,8 +36,8 @@
                 <a href="__BASE__/index.html" class="font-bold text-orange-600">Cookbook</a>
                 <div class="flex items-center gap-2 flex-wrap justify-end">
                     <a href="__BASE__/index.html" class="nav-pill">Recipes</a>
-                    <a href="__BASE__/plan.html" class="nav-pill grocery-plan-nav-link">Plan</a>
-                    <a href="__BASE__/grocery.html" class="nav-pill active grocery-nav-link">
+                    <a href="__BASE__/plan.html" class="nav-pill active grocery-plan-nav-link">Plan</a>
+                    <a href="__BASE__/grocery.html" class="nav-pill grocery-nav-link">
                         Grocery <span class="grocery-badge" aria-hidden="true">0</span>
                     </a>
                     <button onclick="(function(){const d=document.documentElement;const next=!d.classList.contains('dark');d.classList.toggle('dark',next);localStorage.setItem('theme',next?'dark':'light');})()"
@@ -47,8 +47,8 @@
             </div>
         </nav>
 
-        <main class="bg-white rounded-2xl shadow-lg p-6 grocery-page">
-            <div id="grocery-root"></div>
+        <main class="bg-white rounded-2xl shadow-lg p-6 grocery-page plan-page">
+            <div id="plan-root"></div>
         </main>
     </div>
     <script src="__BASE__/static/js/grocery.js"></script>
