@@ -35,6 +35,7 @@ brew install cookcli
 | [Turkey Burgers](recipes/Turkey%20Burgers.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/turkey-burgers/) |
 | [Thai Peanut Noodles](recipes/Thai%20Peanut%20Noodles.cook) | [Tornadough Alli](https://tornadoughalli.com/thai-peanut-noodles/) |
 | [Artichoke Dip](recipes/Artichoke%20Dip.cook) | Personal |
+| [Pumpkin Pizza](recipes/Pumpkin%20Pizza.cook) | Runner's World Vegetarian Cookbook (annotated) — [transcription review](transcription-reviews/pumpkin-pizza.md) |
 
 ## Shopping list
 
