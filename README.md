@@ -2,6 +2,8 @@
 
 A static, git-backed cookbook in [Cooklang](https://cooklang.org/). Recipes live as plain `.cook` files; use CookCLI for shopping lists and a phone-friendly site on GitHub Pages.
 
+**Images:** compressed sidecars in-repo for now; migrate to R2 + frontmatter URLs when space gets tight. See [MEDIA.md](MEDIA.md).
+
 ## Setup
 
 Install [CookCLI](https://github.com/cooklang/cookcli):
