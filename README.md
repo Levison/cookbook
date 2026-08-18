@@ -64,7 +64,7 @@ Prefer `course: main` over `dinner`. Put reusable building blocks in `basics/` (
 | [Turkey Burgers](recipes/mains/Turkey%20Burgers.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/turkey-burgers/) |
 | [Thai Peanut Noodles](recipes/mains/Thai%20Peanut%20Noodles.cook) | [Tornadough Alli](https://tornadoughalli.com/thai-peanut-noodles/) |
 | [Artichoke Dip](recipes/appetizers/Artichoke%20Dip.cook) | Personal |
-| [Pumpkin Pizza](recipes/pizza/Pumpkin%20Pizza.cook) | Runner's World Vegetarian Cookbook (annotated) — [transcription review](transcription-reviews/pumpkin-pizza.md) |
+| [Pumpkin Pizza](recipes/pizza/Pumpkin%20Pizza.cook) | Runner's World Vegetarian Cookbook (annotated) — [transcription review #12](https://github.com/Levison/cookbook/issues/12) |
 
 ## Attribution and changes
 
@@ -94,7 +94,7 @@ changes:
   - Prefer skillet over printed oven method
 ```
 
-Deep provenance (book photos, handwriting) can still use `transcription-reviews/` when a checklist is needed; the `.cook` frontmatter remains the canonical credit + change list.
+Deep provenance checklists (book photos, handwriting) belong in a GitHub Issue tagged via the recipe’s `transcription-review` tag; the `.cook` frontmatter remains the canonical credit + change list.
 
 ## Shopping list
 
