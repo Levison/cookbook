@@ -37,6 +37,36 @@ brew install cookcli
 | [Artichoke Dip](recipes/Artichoke%20Dip.cook) | Personal |
 | [Pumpkin Pizza](recipes/Pumpkin%20Pizza.cook) | Runner's World Vegetarian Cookbook (annotated) — [transcription review](transcription-reviews/pumpkin-pizza.md) |
 
+## Attribution and changes
+
+Credit and diffs live in each recipe’s YAML frontmatter (machine-readable; rendering can come later).
+
+| Key | Meaning |
+| --- | --- |
+| `source` | Where the recipe came from — URL, book title, or `personal` |
+| `author` | Original author or site credit (omit only when unknown) |
+| `origin_title` | Optional. Printed/source title when our `title` differs |
+| `changes` | Optional YAML list of short strings describing how this file differs from the source |
+
+Semantics for `changes`:
+
+- **Key omitted** — not yet reviewed against the source (do not invent diffs).
+- **`changes: []`** — original/personal, or reviewed with no material deltas.
+- **Non-empty list** — known deltas only (ingredient swaps, method preferences, renames). Cooking tips that are not source diffs stay in the body, not here.
+
+Example:
+
+```yaml
+source: https://example.com/recipe
+author: Jane Doe
+origin_title: Smoky Squash Flatbread
+changes:
+  - Renamed for household use
+  - Prefer skillet over printed oven method
+```
+
+Deep provenance (book photos, handwriting) can still use `transcription-reviews/` when a checklist is needed; the `.cook` frontmatter remains the canonical credit + change list.
+
 ## Shopping list
 
 Run from `recipes/` (needed so recipe-to-recipe references resolve), or pass `--base-path`:
