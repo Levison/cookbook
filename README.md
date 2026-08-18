@@ -39,6 +39,14 @@ brew install cookcli
 
 ## Shopping list
 
+### On the phone (GitHub Pages)
+
+The published site adds checkboxes next to each recipe’s ingredients and an **Export to grocery** button. Uncheck pantry staples, export, then open **Grocery** in the nav (or `/grocery.html`) to check items off while shopping. Share/copy uses the phone share sheet when available; the list is stored in the browser (`localStorage`).
+
+This is layered on after `cook build web` via `site-enhancements/inject.sh` (wired into the Pages workflow).
+
+### From the CLI
+
 Run from `recipes/` (needed so recipe-to-recipe references resolve), or pass `--base-path`:
 
 ```bash
@@ -80,7 +88,8 @@ Every later recipe push rebuilds the site automatically.
 
 ```bash
 cook build web --base-path recipes
-# open ./_site/index.html in a browser
+bash site-enhancements/inject.sh ./_site
+# open ./_site/index.html in a browser (or serve the folder)
 ```
 
 For day-of cooking on your own machine (scaling, interactive shopping list):
