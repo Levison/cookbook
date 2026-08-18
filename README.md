@@ -27,6 +27,9 @@ brew install cookcli
 | [Perfect Pizza (Margherita)](recipes/Perfect%20Pizza%20Margherita.cook) | [Gennaro Contaldo / Food Tube](https://youtu.be/1-SJGQ2HLp8) |
 | [Olive Garden Chicken Gnocchi Soup](recipes/Olive%20Garden%20Chicken%20Gnocchi%20Soup.cook) | [Tornadough Alli](https://tornadoughalli.com/olive-garden-chicken-gnocchi-soup/) |
 | [One Pan Jambalaya](recipes/One%20Pan%20Jambalaya.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/one-pan-jambalaya/) |
+| [Roasted Chile Rellenos with Black Beans](recipes/Roasted%20Chile%20Rellenos%20with%20Black%20Beans.cook) | [Feasting At Home](https://www.feastingathome.com/roasted-chile-rellenos-with-black-beans/) |
+| [Tomato Basil Chicken Fettuccine](recipes/Tomato%20Basil%20Chicken%20Fettuccine.cook) | [Damn Delicious](https://damndelicious.net/2016/02/02/tomato-basil-chicken-fettuccine/) |
+| [Overnight Oats](recipes/Overnight%20Oats.cook) | [Feel Good Foodie](https://feelgoodfoodie.net/recipe/overnight-oats/) |
 
 ## Shopping list
 
