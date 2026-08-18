@@ -34,6 +34,7 @@ brew install cookcli
 | [Fluffy Pancakes](recipes/Fluffy%20Pancakes.cook) | [Laura Fuentes](https://www.laurafuentes.com/fluffy-pancakes-recipe/) |
 | [Turkey Burgers](recipes/Turkey%20Burgers.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/turkey-burgers/) |
 | [Thai Peanut Noodles](recipes/Thai%20Peanut%20Noodles.cook) | [Tornadough Alli](https://tornadoughalli.com/thai-peanut-noodles/) |
+| [Artichoke Dip](recipes/Artichoke%20Dip.cook) | Personal |
 
 ## Shopping list
 
