@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inject mobile grocery enhancements into a CookCLI static site build.
+# Inject mobile grocery + meal-plan enhancements into a CookCLI static site build.
 # Usage: ./site-enhancements/inject.sh [_site]
 set -euo pipefail
 
@@ -12,7 +12,7 @@ if [[ ! -d "$SITE" ]]; then
   exit 1
 fi
 
-mkdir -p "$SITE/static/js" "$SITE/static/css"
+mkdir -p "$SITE/static/js" "$SITE/static/css" "$SITE/static/data"
 cp "$SRC/grocery.js" "$SITE/static/js/grocery.js"
 cp "$SRC/grocery.css" "$SITE/static/css/grocery.css"
 
@@ -50,12 +50,23 @@ prefix_path() {
   fi
 }
 
+if ! command -v cook >/dev/null 2>&1; then
+  echo "cook CLI is required to build the recipes manifest" >&2
+  exit 1
+fi
+
+python3 "$SRC/build-manifest.py" \
+  --repo "$ROOT" \
+  --out "$SITE/static/data/recipes-manifest.json" \
+  --base-prefix "$PREFIX"
+
 CSS_HREF="$(prefix_path 'static/css/grocery.css')"
 JS_SRC="$(prefix_path 'static/js/grocery.js')"
 CSS_TAG="<link href=\"${CSS_HREF}\" rel=\"stylesheet\">"
 JS_TAG="<script src=\"${JS_SRC}\"></script>"
 
 sed "s|__BASE__|${PREFIX}|g" "$SRC/grocery.html" > "$SITE/grocery.html"
+sed "s|__BASE__|${PREFIX}|g" "$SRC/plan.html" > "$SITE/plan.html"
 
 inject_file() {
   local file="$1"
@@ -84,7 +95,8 @@ inject_file() {
 
 count=0
 while IFS= read -r -d '' html; do
-  if [[ "$(basename "$html")" == "grocery.html" ]]; then
+  base="$(basename "$html")"
+  if [[ "$base" == "grocery.html" || "$base" == "plan.html" ]]; then
     continue
   fi
   inject_file "$html"
@@ -92,4 +104,5 @@ while IFS= read -r -d '' html; do
 done < <(find "$SITE" -name '*.html' -print0)
 
 echo "Injected grocery enhancements into ${count} pages (base=${PREFIX:-/})"
+echo "Plan page: ${SITE}/plan.html"
 echo "Grocery page: ${SITE}/grocery.html"

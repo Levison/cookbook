@@ -100,9 +100,13 @@ Deep provenance checklists (book photos, handwriting) belong in a GitHub Issue t
 
 ### On the phone (GitHub Pages)
 
-The published site adds checkboxes next to each recipe’s ingredients and an **Export to grocery** button. Uncheck pantry staples, export, then open **Grocery** in the nav (or `/grocery.html`) to check items off while shopping. Share/copy uses the phone share sheet when available; the list is stored in the browser (`localStorage`).
+**Plan a week of meals:** open **Plan** in the nav (or `/plan.html`), select whole recipes, then **Add to grocery**. Ingredients expand from composed recipes (the same way as the CLI shopping list) and land on **Grocery** grouped by store aisle when `config/aisle.conf` is present.
 
-This is layered on after `cook build web` via `site-enhancements/inject.sh` (wired into the Pages workflow).
+**From one recipe:** each recipe page has **Add recipe to grocery**. Uncheck pantry staples first if you only want part of the list.
+
+On **Grocery**, check items off while shopping, remove a whole recipe with the chips at the top, or share/copy via the phone share sheet. The list is stored in the browser (`localStorage`).
+
+This is layered on after `cook build web` via `site-enhancements/inject.sh` (wired into the Pages workflow), which also builds `static/data/recipes-manifest.json`.
 
 ### From the CLI
 
