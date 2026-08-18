@@ -30,6 +30,10 @@ brew install cookcli
 | [Roasted Chile Rellenos with Black Beans](recipes/Roasted%20Chile%20Rellenos%20with%20Black%20Beans.cook) | [Feasting At Home](https://www.feastingathome.com/roasted-chile-rellenos-with-black-beans/) |
 | [Tomato Basil Chicken Fettuccine](recipes/Tomato%20Basil%20Chicken%20Fettuccine.cook) | [Damn Delicious](https://damndelicious.net/2016/02/02/tomato-basil-chicken-fettuccine/) |
 | [Overnight Oats](recipes/Overnight%20Oats.cook) | [Feel Good Foodie](https://feelgoodfoodie.net/recipe/overnight-oats/) |
+| [Pumpkin Mac and Cheese with Roasted Veggies](recipes/Pumpkin%20Mac%20and%20Cheese%20with%20Roasted%20Veggies.cook) | [Skinnytaste](https://www.skinnytaste.com/pumpkin-mac-and-cheese-with-roasted-veggies/) |
+| [Fluffy Pancakes](recipes/Fluffy%20Pancakes.cook) | [Laura Fuentes](https://www.laurafuentes.com/fluffy-pancakes-recipe/) |
+| [Turkey Burgers](recipes/Turkey%20Burgers.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/turkey-burgers/) |
+| [Thai Peanut Noodles](recipes/Thai%20Peanut%20Noodles.cook) | [Tornadough Alli](https://tornadoughalli.com/thai-peanut-noodles/) |
 
 ## Shopping list
 
