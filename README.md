@@ -104,9 +104,7 @@ Deep provenance checklists (book photos, handwriting) belong in a GitHub Issue t
 
 **From one recipe:** each recipe page has **Add recipe to grocery**. Uncheck pantry staples first if you only want part of the list.
 
-On **Grocery**, check items off while shopping, remove a whole recipe with the chips at the top, or share/copy via the phone share sheet. The list is stored in the browser (`localStorage`).
-
-**Household list (GitHub Gist):** link a secret gist on the Grocery page so everyone can **pull** the same list. The site polls the gist every few seconds while Grocery is open. To **publish** changes (new items, check-offs), tap **Copy JSON for gist**, open the gist on GitHub, replace `grocery.json`, and save. No API token is stored in the site — only the unlisted gist ID. See [Household grocery gist](#household-grocery-gist) below.
+On **Grocery**, check items off while shopping, remove a whole recipe with the chips at the top, or tap **Share list** to send a link (opens the phone share sheet, or copies the link). Opening that link loads the list on another phone. The list is also stored locally in the browser (`localStorage`).
 
 This is layered on after `cook build web` via `site-enhancements/inject.sh` (wired into the Pages workflow), which also builds `static/data/recipes-manifest.json`.
 
@@ -127,26 +125,6 @@ cook doctor aisle --base-path "$(pwd)/recipes"
 ```
 
 Use an absolute `--base-path` for `doctor aisle` when recipes are nested (a CookCLI quirk with `-b .`). Section names and aliases in `aisle.conf` should be tuned to your usual store; the checked-in file is a working default.
-
-### Household grocery gist
-
-Share a grocery list across phones without a backend:
-
-1. Create a **secret gist** at [gist.github.com](https://gist.github.com/) with one file named `grocery.json`:
-
-   ```json
-   {"version":1,"updatedAt":0,"items":[]}
-   ```
-
-2. Copy the gist ID from the URL (`https://gist.github.com/you/GIST_ID`).
-
-3. Either commit the ID in `config/household-gist.json` (`"gistId": "..."`) so the whole household gets it on deploy, or bookmark `grocery.html?gist=GIST_ID` on each phone.
-
-**Pull:** open Grocery — the page syncs from the gist on load and every ~8 seconds.
-
-**Publish:** after planning or checking items off, tap **Copy JSON for gist**, edit the gist’s `grocery.json` in the GitHub app or browser, paste, and save. Others see updates on the next sync.
-
-**Share / copy text** still works for a one-off handoff (Messages, Notes, etc.) without touching the gist.
 
 ## Compose recipes
 

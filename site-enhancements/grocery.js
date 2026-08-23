@@ -9,10 +9,7 @@
   'use strict';
 
   var STORAGE_KEY = 'cookbook-grocery-v1';
-  var HOUSEHOLD_GIST_KEY = 'cookbook-grocery-household-gist';
-  var HOUSEHOLD_SYNC_KEY = 'cookbook-grocery-household-sync';
-  var HOUSEHOLD_POLL_MS = 8000;
-  var GIST_PAYLOAD_VERSION = 1;
+  var SHARE_LIST_HASH_PREFIX = '#l=';
   var CHAPTER_LABELS = {
     appetizers: 'Appetizers',
     basics: 'Basics',
@@ -54,13 +51,6 @@
     return basePath() + '/static/data/recipes-manifest.json';
   }
 
-  function householdConfigUrl() {
-    return basePath() + '/static/data/household-gist.json';
-  }
-
-  var householdConfigCache = null;
-  var householdPollTimer = null;
-
   function loadCart() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -72,335 +62,9 @@
     }
   }
 
-  function saveCart(items, options) {
+  function saveCart(items) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    if (!options || !options.skipHouseholdBump) {
-      bumpHouseholdLocalModified();
-    }
     updateBadges();
-  }
-
-  function loadHouseholdGistId() {
-    try {
-      var raw = localStorage.getItem(HOUSEHOLD_GIST_KEY);
-      return raw ? String(raw).trim() : '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function saveHouseholdGistId(gistId) {
-    var id = String(gistId || '').trim();
-    if (id) {
-      localStorage.setItem(HOUSEHOLD_GIST_KEY, id);
-    } else {
-      localStorage.removeItem(HOUSEHOLD_GIST_KEY);
-    }
-  }
-
-  function loadHouseholdSyncMeta() {
-    try {
-      var raw = localStorage.getItem(HOUSEHOLD_SYNC_KEY);
-      if (!raw) {
-        return { lastSyncedAt: 0, lastRemoteUpdatedAt: 0, localModifiedAt: 0 };
-      }
-      var parsed = JSON.parse(raw);
-      return {
-        lastSyncedAt: parsed.lastSyncedAt || 0,
-        lastRemoteUpdatedAt: parsed.lastRemoteUpdatedAt || 0,
-        localModifiedAt: parsed.localModifiedAt || 0
-      };
-    } catch (e) {
-      return { lastSyncedAt: 0, lastRemoteUpdatedAt: 0, localModifiedAt: 0 };
-    }
-  }
-
-  function saveHouseholdSyncMeta(meta) {
-    localStorage.setItem(HOUSEHOLD_SYNC_KEY, JSON.stringify(meta));
-  }
-
-  function bumpHouseholdLocalModified() {
-    var meta = loadHouseholdSyncMeta();
-    meta.localModifiedAt = Date.now();
-    saveHouseholdSyncMeta(meta);
-  }
-
-  function hasUnpublishedHouseholdChanges() {
-    var meta = loadHouseholdSyncMeta();
-    return meta.localModifiedAt > meta.lastSyncedAt;
-  }
-
-  function captureGistIdFromUrl() {
-    try {
-      var params = new URLSearchParams(window.location.search);
-      var gistId = (params.get('gist') || '').trim();
-      if (!gistId) return '';
-      saveHouseholdGistId(gistId);
-      params.delete('gist');
-      var query = params.toString();
-      var next =
-        window.location.pathname +
-        (query ? '?' + query : '') +
-        window.location.hash;
-      window.history.replaceState({}, '', next);
-      return gistId;
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function loadHouseholdConfig() {
-    if (householdConfigCache) return Promise.resolve(householdConfigCache);
-    return fetch(householdConfigUrl())
-      .then(function (res) {
-        if (!res.ok) throw new Error('household config ' + res.status);
-        return res.json();
-      })
-      .then(function (data) {
-        householdConfigCache = data || {};
-        return householdConfigCache;
-      })
-      .catch(function () {
-        householdConfigCache = { gistId: '', gistFile: 'grocery.json' };
-        return householdConfigCache;
-      });
-  }
-
-  function resolveHouseholdGistId(config) {
-    var fromUrl = captureGistIdFromUrl();
-    if (fromUrl) return fromUrl;
-    var stored = loadHouseholdGistId();
-    if (stored) return stored;
-    return config && config.gistId ? String(config.gistId).trim() : '';
-  }
-
-  function gistFileName(config) {
-    return (config && config.gistFile) || 'grocery.json';
-  }
-
-  function normalizeGistItems(items) {
-    if (!Array.isArray(items)) return [];
-    return items.filter(function (item) {
-      return item && item.id && item.name;
-    });
-  }
-
-  function buildGistPayload(items) {
-    return {
-      version: GIST_PAYLOAD_VERSION,
-      updatedAt: Date.now(),
-      items: normalizeGistItems(items)
-    };
-  }
-
-  function parseGistContent(content) {
-    var parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) {
-      return {
-        items: normalizeGistItems(parsed),
-        updatedAt: 0
-      };
-    }
-    return {
-      items: normalizeGistItems(parsed.items || []),
-      updatedAt: parsed.updatedAt || 0
-    };
-  }
-
-  function fetchGistFileContent(file, gistUpdatedAt) {
-    if (!file) return Promise.reject(new Error('gist file missing'));
-    if (file.truncated && file.raw_url) {
-      return fetch(file.raw_url).then(function (res) {
-        if (!res.ok) throw new Error('gist raw ' + res.status);
-        return res.text();
-      });
-    }
-    return Promise.resolve(file.content || '');
-  }
-
-  function fetchHouseholdGist(gistId, config) {
-    var fileName = gistFileName(config);
-    return fetch('https://api.github.com/gists/' + encodeURIComponent(gistId), {
-      headers: { Accept: 'application/vnd.github+json' }
-    })
-      .then(function (res) {
-        if (!res.ok) throw new Error('gist ' + res.status);
-        return res.json();
-      })
-      .then(function (data) {
-        var file = data.files && (data.files[fileName] || data.files[Object.keys(data.files)[0]]);
-        return fetchGistFileContent(file, data.updated_at).then(function (content) {
-          var parsed = parseGistContent(content);
-          var remoteUpdatedAt = parsed.updatedAt;
-          if (!remoteUpdatedAt && data.updated_at) {
-            remoteUpdatedAt = new Date(data.updated_at).getTime();
-          }
-          return {
-            items: parsed.items,
-            updatedAt: remoteUpdatedAt || 0,
-            gistUrl: data.html_url || 'https://gist.github.com/' + gistId
-          };
-        });
-      });
-  }
-
-  function mergeHouseholdItems(localItems, remoteItems) {
-    var localById = {};
-    localItems.forEach(function (item) {
-      localById[item.id] = item;
-    });
-
-    return remoteItems.map(function (remote) {
-      var local = localById[remote.id];
-      if (!local) return remote;
-      return {
-        id: remote.id,
-        name: remote.name,
-        quantity: remote.quantity || '',
-        aisle: remote.aisle || local.aisle || '',
-        recipe: remote.recipe || local.recipe || '',
-        recipePath: remote.recipePath || local.recipePath || '',
-        recipeId: remote.recipeId || local.recipeId || '',
-        bought: !!(local.bought || remote.bought),
-        addedAt: remote.addedAt || local.addedAt || Date.now()
-      };
-    });
-  }
-
-  function applyHouseholdGist(remote, options) {
-    var opts = options || {};
-    var meta = loadHouseholdSyncMeta();
-    var localItems = loadCart();
-    var merged = mergeHouseholdItems(localItems, remote.items);
-
-    if (
-      !opts.force &&
-      remote.updatedAt &&
-      remote.updatedAt <= meta.lastRemoteUpdatedAt &&
-      merged.length === localItems.length
-    ) {
-      return { changed: false, itemCount: merged.length };
-    }
-
-    saveCart(merged, { skipHouseholdBump: true });
-    meta.lastSyncedAt = Date.now();
-    meta.lastRemoteUpdatedAt = remote.updatedAt || meta.lastRemoteUpdatedAt;
-    meta.localModifiedAt = meta.lastSyncedAt;
-    saveHouseholdSyncMeta(meta);
-    return { changed: true, itemCount: merged.length };
-  }
-
-  function syncHouseholdGist(gistId, config, options) {
-    return fetchHouseholdGist(gistId, config).then(function (remote) {
-      var result = applyHouseholdGist(remote, options);
-      return Object.assign({ remote: remote }, result);
-    });
-  }
-
-  function formatRelativeTime(timestamp) {
-    if (!timestamp) return 'never';
-    var delta = Date.now() - timestamp;
-    if (delta < 60000) return 'just now';
-    if (delta < 3600000) return Math.floor(delta / 60000) + 'm ago';
-    if (delta < 86400000) return Math.floor(delta / 3600000) + 'h ago';
-    return Math.floor(delta / 86400000) + 'd ago';
-  }
-
-  function stopHouseholdPolling() {
-    if (householdPollTimer) {
-      clearInterval(householdPollTimer);
-      householdPollTimer = null;
-    }
-  }
-
-  function startHouseholdPolling(gistId, config, onUpdate) {
-    stopHouseholdPolling();
-    if (!gistId) return;
-
-    householdPollTimer = setInterval(function () {
-      syncHouseholdGist(gistId, config)
-        .then(function (result) {
-          if (result.changed && onUpdate) onUpdate(result, { silent: true });
-        })
-        .catch(function () {
-          /* ignore transient network errors while polling */
-        });
-    }, HOUSEHOLD_POLL_MS);
-  }
-
-  function copyHouseholdGistPayload(items) {
-    var payload = JSON.stringify(buildGistPayload(items), null, 2);
-    return copyText(payload);
-  }
-
-  function promptHouseholdGistId(currentId) {
-    var next = window.prompt(
-      'Paste your household gist ID (from the gist URL):\n\n' +
-        'https://gist.github.com/you/GIST_ID',
-      currentId || ''
-    );
-    if (next === null) return null;
-    return String(next).trim();
-  }
-
-  function renderHouseholdPanel(container, state, handlers) {
-    var panel = document.createElement('section');
-    panel.className = 'household-sync print:hidden';
-
-    if (!state.gistId) {
-      panel.innerHTML =
-        '<h2 class="household-sync-title">Household list</h2>' +
-        '<p class="household-sync-copy">Link a secret GitHub gist so everyone in the household can pull the same grocery list. ' +
-        'Updates are read-only here — paste copied JSON into the gist to publish changes.</p>' +
-        '<div class="household-sync-actions">' +
-        '<button type="button" class="grocery-primary" data-household="link">Link household gist</button>' +
-        '</div>' +
-        '<p class="household-sync-hint">Create a <strong>secret gist</strong> with a file named <code>grocery.json</code> containing ' +
-        '<code>{"version":1,"updatedAt":0,"items":[]}</code>. Bookmark <code>grocery.html?gist=YOUR_ID</code> on each phone.</p>';
-    } else {
-      var statusBits = ['Linked to gist'];
-      if (state.syncing) {
-        statusBits.push('syncing…');
-      } else if (state.lastSyncedAt) {
-        statusBits.push('synced ' + formatRelativeTime(state.lastSyncedAt));
-      }
-      if (state.unpublished) {
-        statusBits.push('unpublished local changes');
-      }
-
-      panel.innerHTML =
-        '<h2 class="household-sync-title">Household list</h2>' +
-        '<p class="household-sync-status">' +
-        statusBits.join(' · ') +
-        '</p>' +
-        '<div class="household-sync-actions">' +
-        '<button type="button" class="grocery-primary" data-household="sync">Sync now</button>' +
-        '<button type="button" data-household="copy-json">Copy JSON for gist</button>' +
-        '<button type="button" data-household="share">Share / copy text</button>' +
-        '<a class="grocery-inline-link household-sync-open" href="' +
-        (state.gistUrl || '#') +
-        '" target="_blank" rel="noopener">Open gist</a>' +
-        '<button type="button" data-household="unlink">Unlink</button>' +
-        '</div>' +
-        '<p class="household-sync-hint">Pulls from the gist every ' +
-        Math.round(HOUSEHOLD_POLL_MS / 1000) +
-        's while this page is open. To publish, tap <strong>Copy JSON for gist</strong>, open the gist, replace <code>grocery.json</code>, and save.</p>';
-      if (state.error) {
-        var err = document.createElement('p');
-        err.className = 'household-sync-error';
-        err.textContent = state.error;
-        panel.appendChild(err);
-      }
-    }
-
-    panel.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-household]');
-      if (!btn) return;
-      var action = btn.getAttribute('data-household');
-      if (handlers[action]) handlers[action](e);
-    });
-
-    return panel;
   }
 
   function recipeTitle() {
@@ -768,24 +432,121 @@
     });
   }
 
-  function shareOrCopy(items) {
+  function toBase64Url(str) {
+    return btoa(unescape(encodeURIComponent(str)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  }
+
+  function fromBase64Url(encoded) {
+    var b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return decodeURIComponent(escape(atob(b64)));
+  }
+
+  function normalizeSharedItems(items) {
+    if (!Array.isArray(items)) return [];
+    return items
+      .filter(function (item) {
+        return item && item.id && item.name;
+      })
+      .map(function (item) {
+        return {
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity || '',
+          aisle: item.aisle || '',
+          recipe: item.recipe || '',
+          recipePath: item.recipePath || '',
+          recipeId: item.recipeId || '',
+          bought: !!item.bought,
+          addedAt: item.addedAt || Date.now()
+        };
+      });
+  }
+
+  function encodeSharePayload(items) {
+    return toBase64Url(JSON.stringify({ v: 1, items: normalizeSharedItems(items) }));
+  }
+
+  function buildShareLink(items) {
+    var url = new URL(groceryUrl(), window.location.href);
+    url.hash = 'l=' + encodeSharePayload(items);
+    return url.toString();
+  }
+
+  function getSharePayloadFromUrl() {
+    var hash = window.location.hash || '';
+    if (hash.indexOf(SHARE_LIST_HASH_PREFIX) === 0) {
+      return hash.slice(SHARE_LIST_HASH_PREFIX.length);
+    }
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return params.get('list') || params.get('l') || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function clearShareParamsFromUrl() {
+    try {
+      var url = new URL(window.location.href);
+      url.hash = '';
+      url.searchParams.delete('list');
+      url.searchParams.delete('l');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function importSharedListFromUrl() {
+    var encoded = getSharePayloadFromUrl();
+    if (!encoded) return false;
+
+    try {
+      var parsed = JSON.parse(fromBase64Url(encoded));
+      var items = normalizeSharedItems(parsed.items || parsed);
+      if (!items.length) return false;
+      saveCart(items);
+      clearShareParamsFromUrl();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function shareListLink(items) {
+    if (!items.length) {
+      toast('Add items before sharing');
+      return;
+    }
+
+    var link = buildShareLink(items);
     var text = formatPlainText(items);
+
     if (navigator.share) {
       navigator
-        .share({ title: 'Grocery list', text: text })
+        .share({
+          title: 'Grocery list',
+          text: text,
+          url: link
+        })
         .catch(function () {
-          return copyText(text).then(function () {
-            toast('Copied grocery list');
+          return copyText(link).then(function () {
+            toast('Link copied');
           });
         });
       return;
     }
-    copyText(text)
+
+    copyText(link)
       .then(function () {
-        toast('Copied grocery list');
+        toast('Link copied');
       })
       .catch(function () {
-        toast('Could not copy — try selecting the list');
+        toast('Could not copy link');
       });
   }
 
@@ -812,104 +573,10 @@
     var root = document.getElementById('grocery-root');
     if (!root) return;
 
-    var householdState = {
-      config: null,
-      gistId: '',
-      gistUrl: '',
-      syncing: false,
-      error: '',
-      lastSyncedAt: 0,
-      unpublished: false
-    };
-
-    function refreshHouseholdState() {
-      var meta = loadHouseholdSyncMeta();
-      householdState.lastSyncedAt = meta.lastSyncedAt;
-      householdState.unpublished = hasUnpublishedHouseholdChanges();
-    }
-
-    function householdHandlers() {
-      return {
-        link: function () {
-          var next = promptHouseholdGistId(householdState.gistId);
-          if (next === null) return;
-          if (!next) {
-            toast('Paste a gist ID to link');
-            return;
-          }
-          householdState.gistId = next;
-          saveHouseholdGistId(next);
-          householdState.error = '';
-          runHouseholdSync({ force: true, announce: true });
-        },
-        sync: function () {
-          runHouseholdSync({ force: true, announce: true });
-        },
-        'copy-json': function () {
-          copyHouseholdGistPayload(loadCart())
-            .then(function () {
-              refreshHouseholdState();
-              draw();
-              toast('Copied JSON — paste into grocery.json on the gist');
-            })
-            .catch(function () {
-              toast('Could not copy JSON');
-            });
-        },
-        share: function () {
-          shareOrCopy(loadCart());
-        },
-        unlink: function () {
-          if (!confirm('Stop syncing with this household gist on this device?')) return;
-          stopHouseholdPolling();
-          saveHouseholdGistId('');
-          householdState.gistId = '';
-          householdState.gistUrl = '';
-          householdState.error = '';
-          draw();
-          toast('Household gist unlinked');
-        }
-      };
-    }
-
-    function runHouseholdSync(options) {
-      var opts = options || {};
-      if (!householdState.gistId) return Promise.resolve();
-
-      householdState.syncing = true;
-      householdState.error = '';
-      if (!opts.silent) draw();
-
-      return syncHouseholdGist(householdState.gistId, householdState.config, {
-        force: !!opts.force
-      })
-        .then(function (result) {
-          householdState.gistUrl = result.remote.gistUrl;
-          householdState.syncing = false;
-          householdState.error = '';
-          refreshHouseholdState();
-          if (opts.announce && result.changed) {
-            toast('Synced ' + result.itemCount + ' household items');
-          } else if (opts.announce && !result.changed) {
-            toast('Already up to date');
-          } else if (result.changed && opts.silent) {
-            toast('Household list updated');
-          }
-          draw();
-          return result;
-        })
-        .catch(function (err) {
-          householdState.syncing = false;
-          householdState.error =
-            (err && err.message ? err.message : 'Could not reach gist') +
-            '. Check the gist ID and that grocery.json exists.';
-          draw();
-        });
-    }
+    var imported = importSharedListFromUrl();
 
     function draw() {
       var items = loadCart();
-      refreshHouseholdState();
       root.innerHTML = '';
 
       var title = document.createElement('h1');
@@ -928,19 +595,15 @@
           items.length +
           ' item' +
           (items.length === 1 ? '' : 's') +
-          ' · tap to check off while shopping';
+          ' · tap to check off while shopping · tap Share list to send a link';
       }
       root.appendChild(sub);
-
-      root.appendChild(
-        renderHouseholdPanel(root, householdState, householdHandlers())
-      );
 
       var actions = document.createElement('div');
       actions.className = 'grocery-actions print:hidden';
       if (items.length) {
         actions.innerHTML =
-          '<button type="button" class="grocery-primary" data-act="share">Share / copy</button>' +
+          '<button type="button" class="grocery-primary" data-act="share">Share list</button>' +
           '<button type="button" data-act="clear-bought">Clear checked</button>' +
           '<button type="button" data-act="clear-all">Clear all</button>';
       }
@@ -959,12 +622,6 @@
         empty.innerHTML =
           'Your grocery list is empty.<br><a href="' + planUrl() + '">Select recipes for the week →</a>';
         root.appendChild(empty);
-        actions.addEventListener('click', function (e) {
-          var btn = e.target.closest('button[data-act]');
-          if (!btn) return;
-          var act = btn.getAttribute('data-act');
-          if (act === 'share') shareOrCopy(loadCart());
-        });
         updateBadges();
         return;
       }
@@ -1094,7 +751,7 @@
         var act = btn.getAttribute('data-act');
         var cart = loadCart();
         if (act === 'share') {
-          shareOrCopy(cart);
+          shareListLink(cart);
         } else if (act === 'clear-bought') {
           saveCart(
             cart.filter(function (item) {
@@ -1115,26 +772,10 @@
       updateBadges();
     }
 
-    loadHouseholdConfig().then(function (config) {
-      householdState.config = config;
-      householdState.gistId = resolveHouseholdGistId(config);
-      if (householdState.gistId) {
-        saveHouseholdGistId(householdState.gistId);
-      }
-      draw();
-      if (householdState.gistId) {
-        runHouseholdSync({ force: true });
-        startHouseholdPolling(householdState.gistId, householdState.config, function (result) {
-          householdState.gistUrl = result.remote.gistUrl;
-          householdState.error = '';
-          refreshHouseholdState();
-          toast('Household list updated');
-          draw();
-        });
-      }
-    });
-
-    window.addEventListener('pagehide', stopHouseholdPolling);
+    draw();
+    if (imported) {
+      toast('Loaded shared grocery list');
+    }
   }
 
   var manifestCache = null;
