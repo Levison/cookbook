@@ -60,6 +60,13 @@ python3 "$SRC/build-manifest.py" \
   --out "$SITE/static/data/recipes-manifest.json" \
   --base-prefix "$PREFIX"
 
+if [[ -f "$ROOT/config/household-gist.json" ]]; then
+  cp "$ROOT/config/household-gist.json" "$SITE/static/data/household-gist.json"
+else
+  printf '%s\n' '{"gistId":"","gistFile":"grocery.json","setupUrl":"https://gist.github.com/"}' \
+    > "$SITE/static/data/household-gist.json"
+fi
+
 CSS_HREF="$(prefix_path 'static/css/grocery.css')"
 JS_SRC="$(prefix_path 'static/js/grocery.js')"
 CSS_TAG="<link href=\"${CSS_HREF}\" rel=\"stylesheet\">"
