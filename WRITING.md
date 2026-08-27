@@ -17,10 +17,16 @@ Cooklang does **not** use a separate ingredient list. Ingredients appear inline 
 
 | Content | Where it goes |
 | --- | --- |
-| Substitutions, serving suggestions, equipment notes | Headnote (`>`) |
+| Source credit (`source`, `author`) | YAML frontmatter — shown on recipe pages; do not repeat in a headnote |
+| Substitutions, serving suggestions, storage | Headnote (`>`) at the **top**, when the cook needs context before starting |
+| Extra provenance (book edition, transcription issue) | Trailing note (`>`) **after** the last step — footnote-style |
 | What to look for while cooking | Step body (with a timer when timing matters) |
 | How this file differs from the source | Frontmatter `changes` list |
-| Tips that are not source diffs | Headnote or step body — never `changes` |
+| Tips that are not source diffs | Step body or headnote — never `changes` |
+
+**Skip the headnote** when everything worth saying is already in the steps or frontmatter. Do not open with “Adapted from…” — that duplicates `source` / `author`.
+
+Do not repeat a step in the headnote. If a technique appears in the steps, the headnote should add context only (why, when optional, what to serve with).
 
 Omit `changes` until a recipe has been reviewed against its source. Use `changes: []` when reviewed with no material deltas.
 
@@ -127,13 +133,10 @@ When a recipe offers pick-one methods (grill, skillet, oven, etc.):
 1. Tag `#cookware{}` only on the **primary** (household-default) method.
 2. Put that method in the main step flow or in a section labeled preferred (e.g. `== Assemble & cook (preferred) ==`).
 3. Put alternates in their own sections (`== Grill (alternative) ==`, `== Oven option ==`). Write alternate cookware in **plain text** — no `#`.
-4. Add a headnote when helpful: `> Pick one cooking method below — you don't need all of them.`
 
 Example (skillet primary):
 
 ```cook
-> Pick one cooking method below — you don't need grill, skillet, and oven.
-
 Heat a thin film of oil or cooking spray in a #nonstick skillet{} over medium-high heat. Cook the patties ~{4-5%minutes} per side until cooked through and an instant-read thermometer reads 160°F.
 
 == Grill (alternative) ==
@@ -178,6 +181,6 @@ Before merging a prose edit:
 - [ ] Times paired with doneness cues; meat has temperature or clear visual test.
 - [ ] Ingredients inline with `@` markup; prep in `(parentheses)`.
 - [ ] “Remaining” used for split ingredients.
-- [ ] Tips and substitutions in headnotes; source diffs in `changes`.
+- [ ] Headnote omitted or adds context only — no attribution, no repeated steps.
 - [ ] Cookware marked with `#` on the primary method only; alternates in plain text (see [Cookware and equipment](#cookware-and-equipment)).
 - [ ] Final step or headnote covers serve/rest/store when useful.
