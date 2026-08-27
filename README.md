@@ -104,7 +104,7 @@ Deep provenance checklists (book photos, handwriting) belong in a GitHub Issue t
 
 **From one recipe:** each recipe page has **Add recipe to grocery**. Uncheck pantry staples first if you only want part of the list.
 
-On **Grocery**, check items off while shopping, remove a whole recipe with the chips at the top, or share/copy via the phone share sheet. The list is stored in the browser (`localStorage`).
+On **Grocery**, check items off while shopping, remove a whole recipe with the chips at the top, or tap **Share list** to send a link (opens the phone share sheet, or copies the link). Opening that link loads the list on another phone. The list is also stored locally in the browser (`localStorage`).
 
 This is layered on after `cook build web` via `site-enhancements/inject.sh` (wired into the Pages workflow), which also builds `static/data/recipes-manifest.json`.
 

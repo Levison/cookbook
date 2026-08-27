@@ -10,6 +10,7 @@
   'use strict';
 
   var STORAGE_KEY = 'cookbook-grocery-v1';
+  var SHARE_LIST_HASH_PREFIX = '#l=';
   var CHAPTER_LABELS = {
     appetizers: 'Appetizers',
     basics: 'Basics',
@@ -628,24 +629,121 @@
     });
   }
 
-  function shareOrCopy(items) {
+  function toBase64Url(str) {
+    return btoa(unescape(encodeURIComponent(str)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  }
+
+  function fromBase64Url(encoded) {
+    var b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    return decodeURIComponent(escape(atob(b64)));
+  }
+
+  function normalizeSharedItems(items) {
+    if (!Array.isArray(items)) return [];
+    return items
+      .filter(function (item) {
+        return item && item.id && item.name;
+      })
+      .map(function (item) {
+        return {
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity || '',
+          aisle: item.aisle || '',
+          recipe: item.recipe || '',
+          recipePath: item.recipePath || '',
+          recipeId: item.recipeId || '',
+          bought: !!item.bought,
+          addedAt: item.addedAt || Date.now()
+        };
+      });
+  }
+
+  function encodeSharePayload(items) {
+    return toBase64Url(JSON.stringify({ v: 1, items: normalizeSharedItems(items) }));
+  }
+
+  function buildShareLink(items) {
+    var url = new URL(groceryUrl(), window.location.href);
+    url.hash = 'l=' + encodeSharePayload(items);
+    return url.toString();
+  }
+
+  function getSharePayloadFromUrl() {
+    var hash = window.location.hash || '';
+    if (hash.indexOf(SHARE_LIST_HASH_PREFIX) === 0) {
+      return hash.slice(SHARE_LIST_HASH_PREFIX.length);
+    }
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return params.get('list') || params.get('l') || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function clearShareParamsFromUrl() {
+    try {
+      var url = new URL(window.location.href);
+      url.hash = '';
+      url.searchParams.delete('list');
+      url.searchParams.delete('l');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function importSharedListFromUrl() {
+    var encoded = getSharePayloadFromUrl();
+    if (!encoded) return false;
+
+    try {
+      var parsed = JSON.parse(fromBase64Url(encoded));
+      var items = normalizeSharedItems(parsed.items || parsed);
+      if (!items.length) return false;
+      saveCart(items);
+      clearShareParamsFromUrl();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function shareListLink(items) {
+    if (!items.length) {
+      toast('Add items before sharing');
+      return;
+    }
+
+    var link = buildShareLink(items);
     var text = formatPlainText(items);
+
     if (navigator.share) {
       navigator
-        .share({ title: 'Grocery list', text: text })
+        .share({
+          title: 'Grocery list',
+          text: text,
+          url: link
+        })
         .catch(function () {
-          return copyText(text).then(function () {
-            toast('Copied grocery list');
+          return copyText(link).then(function () {
+            toast('Link copied');
           });
         });
       return;
     }
-    copyText(text)
+
+    copyText(link)
       .then(function () {
-        toast('Copied grocery list');
+        toast('Link copied');
       })
       .catch(function () {
-        toast('Could not copy — try selecting the list');
+        toast('Could not copy link');
       });
   }
 
@@ -672,6 +770,8 @@
     var root = document.getElementById('grocery-root');
     if (!root) return;
 
+    var imported = importSharedListFromUrl();
+
     function draw() {
       var items = loadCart();
       root.innerHTML = '';
@@ -692,7 +792,7 @@
           items.length +
           ' item' +
           (items.length === 1 ? '' : 's') +
-          ' · tap to check off while shopping';
+          ' · tap to check off while shopping · tap Share list to send a link';
       }
       root.appendChild(sub);
 
@@ -700,7 +800,7 @@
       actions.className = 'grocery-actions print:hidden';
       if (items.length) {
         actions.innerHTML =
-          '<button type="button" class="grocery-primary" data-act="share">Share / copy</button>' +
+          '<button type="button" class="grocery-primary" data-act="share">Share list</button>' +
           '<button type="button" data-act="clear-bought">Clear checked</button>' +
           '<button type="button" data-act="clear-all">Clear all</button>';
       }
@@ -847,7 +947,7 @@
         var act = btn.getAttribute('data-act');
         var cart = loadCart();
         if (act === 'share') {
-          shareOrCopy(cart);
+          shareListLink(cart);
         } else if (act === 'clear-bought') {
           saveCart(
             cart.filter(function (item) {
@@ -869,6 +969,9 @@
     }
 
     draw();
+    if (imported) {
+      toast('Loaded shared grocery list');
+    }
   }
 
   var manifestCache = null;
