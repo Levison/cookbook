@@ -118,6 +118,41 @@ Heat @oil{1%tbsp} in a #12-inch skillet{} over medium-high heat.
 
 Prefer specific sizes when they affect the result (`#12-inch skillet`, `#Dutch oven`, `#9x13 baking dish`). Generic terms are fine for bowls and spoons.
 
+### Primary method vs alternatives
+
+CookCLI lists **every** `#cookware{}` mention in the recipe's Cookware sidebar. Cooklang has no built-in “OR” grouping — tagging both `#grill{}` and `#nonstick skillet{}` implies you need both.
+
+When a recipe offers pick-one methods (grill, skillet, oven, etc.):
+
+1. Tag `#cookware{}` only on the **primary** (household-default) method.
+2. Put that method in the main step flow or in a section labeled preferred (e.g. `== Assemble & cook (preferred) ==`).
+3. Put alternates in their own sections (`== Grill (alternative) ==`, `== Oven option ==`). Write alternate cookware in **plain text** — no `#`.
+4. Add a headnote when helpful: `> Pick one cooking method below — you don't need all of them.`
+
+Example (skillet primary):
+
+```cook
+> Pick one cooking method below — you don't need grill, skillet, and oven.
+
+Heat a thin film of oil or cooking spray in a #nonstick skillet{} over medium-high heat. Cook the patties ~{4-5%minutes} per side until cooked through and an instant-read thermometer reads 160°F.
+
+== Grill (alternative) ==
+
+Clean and grease grill grates. Heat to medium-high. Grill the patties a few minutes per side until cooked through and an instant-read thermometer reads 160°F.
+```
+
+### Inline alternatives
+
+When two items are interchangeable in a **single** step, tag the preferred one and name the other in prose:
+
+```cook
+In a #large Dutch oven{} or stock pot, melt @butter{4%tbsp}.
+
+Heat a #nonstick griddle{} or large pan over medium heat.
+```
+
+Do not tag both unless the recipe truly requires both at once.
+
 ## Finishing
 
 End with serving, resting, or storage when it helps:
@@ -144,5 +179,5 @@ Before merging a prose edit:
 - [ ] Ingredients inline with `@` markup; prep in `(parentheses)`.
 - [ ] “Remaining” used for split ingredients.
 - [ ] Tips and substitutions in headnotes; source diffs in `changes`.
-- [ ] Cookware marked with `#`; key pans sized.
+- [ ] Cookware marked with `#` on the primary method only; alternates in plain text (see [Cookware and equipment](#cookware-and-equipment)).
 - [ ] Final step or headnote covers serve/rest/store when useful.
