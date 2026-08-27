@@ -4,6 +4,7 @@
  * Plan page: select whole recipes → add expanded ingredients to grocery.
  * Recipe page: add the whole recipe (or a pantry-filtered subset).
  * Grocery page: check off while shopping; grouped by aisle when available.
+ * Duplicate ingredients (same name) combine into one line with summed quantities.
  */
 (function () {
   'use strict';
@@ -51,19 +52,187 @@
     return basePath() + '/static/data/recipes-manifest.json';
   }
 
+  function normalizeIngredientName(name) {
+    return String(name || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+  }
+
+  function ingredientKey(name) {
+    return 'ingredient::' + normalizeIngredientName(name);
+  }
+
+  function parseFractionOrNumber(text) {
+    var s = String(text || '').trim();
+    var mixed = s.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+    if (mixed) {
+      return parseInt(mixed[1], 10) + parseInt(mixed[2], 10) / parseInt(mixed[3], 10);
+    }
+    var frac = s.match(/^(\d+)\/(\d+)$/);
+    if (frac) {
+      return parseInt(frac[1], 10) / parseInt(frac[2], 10);
+    }
+    var n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+
+  function parseQuantity(qtyStr) {
+    if (!qtyStr || !String(qtyStr).trim()) return null;
+    qtyStr = String(qtyStr).trim();
+    if (/\d\s*-\s*\d/.test(qtyStr)) return { raw: qtyStr };
+    var m = qtyStr.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\s*(.*)$/);
+    if (!m) return { raw: qtyStr };
+    var amount = parseFractionOrNumber(m[1]);
+    if (amount === null) return { raw: qtyStr };
+    return { amount: amount, unit: (m[2] || '').trim().toLowerCase() };
+  }
+
+  function formatAmount(n) {
+    var whole = Math.floor(n);
+    var frac = n - whole;
+    var nice = [
+      [0.25, '1/4'],
+      [0.333, '1/3'],
+      [0.5, '1/2'],
+      [0.666, '2/3'],
+      [0.75, '3/4']
+    ];
+    var i;
+    for (i = 0; i < nice.length; i += 1) {
+      if (Math.abs(frac - nice[i][0]) < 0.02) {
+        if (whole === 0) return nice[i][1];
+        return whole + ' ' + nice[i][1];
+      }
+    }
+    if (Math.abs(frac) < 0.01) return String(whole);
+    return String(Math.round(n * 100) / 100);
+  }
+
+  function combineQuantityList(qtyList) {
+    var byUnit = {};
+    var raws = [];
+    var seenRaw = {};
+
+    qtyList.forEach(function (q) {
+      if (!q) return;
+      var parsed = parseQuantity(q);
+      if (!parsed || parsed.raw) {
+        if (!seenRaw[q]) {
+          seenRaw[q] = true;
+          raws.push(q);
+        }
+        return;
+      }
+      var key = parsed.unit || '__count__';
+      byUnit[key] = (byUnit[key] || 0) + parsed.amount;
+    });
+
+    var parts = [];
+    Object.keys(byUnit).forEach(function (key) {
+      var unit = key === '__count__' ? '' : key;
+      var text = formatAmount(byUnit[key]) + (unit ? ' ' + unit : '');
+      parts.push(text.trim());
+    });
+    raws.forEach(function (r) {
+      parts.push(r);
+    });
+    return parts.join(' + ');
+  }
+
+  function uniqueRecipeNames(contributions) {
+    var names = [];
+    var seen = {};
+    contributions.forEach(function (c) {
+      if (!c.recipe || seen[c.recipe]) return;
+      seen[c.recipe] = true;
+      names.push(c.recipe);
+    });
+    return names;
+  }
+
+  function migrateItem(item) {
+    if (item.contributions && item.contributions.length) return item;
+    return Object.assign({}, item, {
+      contributions: [
+        {
+          recipe: item.recipe || '',
+          recipePath: item.recipePath || '',
+          recipeId: item.recipeId || '',
+          quantity: item.quantity || ''
+        }
+      ]
+    });
+  }
+
+  function recomputeCombinedItem(item) {
+    item = migrateItem(item);
+    item.id = ingredientKey(item.name);
+    item.quantity = combineQuantityList(
+      item.contributions.map(function (c) {
+        return c.quantity;
+      })
+    );
+    item.recipe = uniqueRecipeNames(item.contributions).join(', ');
+    return item;
+  }
+
+  function normalizeCart(cart) {
+    var byKey = {};
+    cart.forEach(function (raw) {
+      var item = recomputeCombinedItem(migrateItem(raw));
+      var key = item.id;
+      if (!byKey[key]) {
+        byKey[key] = item;
+        return;
+      }
+      var target = byKey[key];
+      item.contributions.forEach(function (c) {
+        var ck = (c.recipePath || c.recipe || '') + '::' + item.name;
+        var exists = target.contributions.some(function (ec) {
+          return (ec.recipePath || ec.recipe || '') + '::' + item.name === ck;
+        });
+        if (!exists) target.contributions.push(c);
+      });
+      if (!target.aisle && item.aisle) target.aisle = item.aisle;
+      target.bought = target.bought && item.bought;
+      target.addedAt = Math.min(target.addedAt || Date.now(), item.addedAt || Date.now());
+      recomputeCombinedItem(target);
+    });
+    return Object.keys(byKey).map(function (key) {
+      return byKey[key];
+    });
+  }
+
+  function removeRecipeFromCart(cart, recipeName) {
+    return normalizeCart(
+      cart
+        .map(function (item) {
+          item = migrateItem(item);
+          var contributions = item.contributions.filter(function (c) {
+            return c.recipe !== recipeName;
+          });
+          if (!contributions.length) return null;
+          return recomputeCombinedItem(Object.assign({}, item, { contributions: contributions }));
+        })
+        .filter(Boolean)
+    );
+  }
+
   function loadCart() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
       var parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      return normalizeCart(parsed);
     } catch (e) {
       return [];
     }
   }
 
   function saveCart(items) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeCart(items)));
     updateBadges();
   }
 
@@ -212,16 +381,36 @@
     }
 
     var cart = loadCart();
-    var existing = {};
-    cart.forEach(function (item) {
-      existing[item.id] = true;
-    });
-
     var added = 0;
-    selected.forEach(function (item) {
-      if (existing[item.id]) return;
-      cart.push(item);
-      existing[item.id] = true;
+
+    selected.forEach(function (incoming) {
+      incoming = recomputeCombinedItem(migrateItem(incoming));
+      var key = incoming.id;
+      var existing = null;
+      var i;
+      for (i = 0; i < cart.length; i += 1) {
+        if (cart[i].id === key) {
+          existing = cart[i];
+          break;
+        }
+      }
+
+      if (existing) {
+        var newContribs = incoming.contributions.filter(function (nc) {
+          var ck = (nc.recipePath || nc.recipe || '') + '::' + incoming.name;
+          return !existing.contributions.some(function (ec) {
+            return (ec.recipePath || ec.recipe || '') + '::' + incoming.name === ck;
+          });
+        });
+        if (!newContribs.length) return;
+        existing.contributions = existing.contributions.concat(newContribs);
+        if (!existing.aisle && incoming.aisle) existing.aisle = incoming.aisle;
+        recomputeCombinedItem(existing);
+        added += newContribs.length;
+        return;
+      }
+
+      cart.push(incoming);
       added += 1;
     });
 
@@ -232,8 +421,8 @@
   function cartItemFromIngredient(ing, recipeMeta) {
     var qty = ing.quantity || '';
     var aisle = ing.aisle || '';
-    return {
-      id: recipeMeta.path + '::' + ing.name + '::' + qty,
+    return recomputeCombinedItem({
+      id: ingredientKey(ing.name),
       name: ing.name,
       quantity: qty,
       aisle: aisle,
@@ -241,8 +430,16 @@
       recipePath: recipeMeta.path,
       recipeId: recipeMeta.id || '',
       bought: false,
-      addedAt: Date.now()
-    };
+      addedAt: Date.now(),
+      contributions: [
+        {
+          recipe: recipeMeta.title,
+          recipePath: recipeMeta.path,
+          recipeId: recipeMeta.id || '',
+          quantity: qty
+        }
+      ]
+    });
   }
 
   function enhanceRecipePage() {
@@ -628,7 +825,10 @@
 
       var recipesOnList = {};
       items.forEach(function (item) {
-        if (item.recipe) recipesOnList[item.recipe] = (recipesOnList[item.recipe] || 0) + 1;
+        (item.contributions || []).forEach(function (c) {
+          if (!c.recipe) return;
+          recipesOnList[c.recipe] = (recipesOnList[c.recipe] || 0) + 1;
+        });
       });
       var recipeNames = Object.keys(recipesOnList);
       if (recipeNames.length) {
@@ -648,11 +848,7 @@
           chip.title = 'Remove all items from ' + name;
           chip.addEventListener('click', function () {
             if (!confirm('Remove all grocery items from “' + name + '”?')) return;
-            saveCart(
-              loadCart().filter(function (item) {
-                return item.recipe !== name;
-              })
-            );
+            saveCart(removeRecipeFromCart(loadCart(), name));
             draw();
             toast('Removed ' + name);
           });
