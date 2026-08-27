@@ -40,6 +40,10 @@ Keep frontmatter consistent so search, shopping, and a future printed book stay 
 
 Prefer `course: main` over `dinner`. Put reusable building blocks in `basics/` (`sauce` or `component`).
 
+### Prose and clarity
+
+Recipe step wording follows [WRITING.md](WRITING.md) — step order, heat levels, doneness cues, headnotes vs `changes`, and Cooklang inline-ingredient conventions.
+
 ## Recipes
 
 | Recipe | Source |
