@@ -15,22 +15,70 @@ import sys
 from pathlib import Path
 
 FRONTMATTER_TITLE = re.compile(r"^title:\s*(.+)$", re.MULTILINE)
+FRONTMATTER_SERVINGS = re.compile(r"^servings:\s*(.+)$", re.MULTILINE)
 SECTION = re.compile(r"^\[([^\]]+)\]\s*$")
 # CookCLI pads with spaces, but long names may leave only a single space before qty.
 # Quantities start with a digit or simple fraction (e.g. 1, 1/2, 4-5, 1.173).
 ITEM = re.compile(r"^(.+?)\s+(\d[\d./\-]*(?:\s+.+)?)\s*$")
 
 
-def read_title(cook_path: Path) -> str:
+def read_frontmatter(cook_path: Path) -> dict:
+    """Parse title, servings, and tags from YAML frontmatter."""
     text = cook_path.read_text(encoding="utf-8")
-    if text.startswith("---"):
-        end = text.find("\n---", 3)
-        if end != -1:
-            fm = text[3:end]
-            m = FRONTMATTER_TITLE.search(fm)
-            if m:
-                return m.group(1).strip().strip("\"'")
-    return cook_path.stem
+    meta: dict = {
+        "title": cook_path.stem,
+        "servings": 1,
+        "tags": [],
+        "scaling": False,
+    }
+    if not text.startswith("---"):
+        return meta
+    end = text.find("\n---", 3)
+    if end == -1:
+        return meta
+    fm = text[3:end]
+
+    m = FRONTMATTER_TITLE.search(fm)
+    if m:
+        meta["title"] = m.group(1).strip().strip("\"'")
+
+    sm = FRONTMATTER_SERVINGS.search(fm)
+    if sm:
+        raw = sm.group(1).strip().strip("\"'")
+        num = re.match(r"(\d+(?:\.\d+)?)", raw)
+        if num:
+            try:
+                servings = float(num.group(1))
+                meta["servings"] = int(servings) if servings == int(servings) else servings
+            except ValueError:
+                pass
+
+    tags: list[str] = []
+    in_tags = False
+    for line in fm.splitlines():
+        if line.startswith("tags:"):
+            rest = line[len("tags:") :].strip()
+            in_tags = True
+            if rest.startswith("[") and rest.endswith("]"):
+                inner = rest[1:-1].strip()
+                if inner:
+                    tags = [t.strip().strip("\"'") for t in inner.split(",") if t.strip()]
+                in_tags = False
+            continue
+        if in_tags:
+            if line.startswith("  - "):
+                tags.append(line[4:].strip().strip("\"'"))
+            elif line.startswith(" ") or line.startswith("\t"):
+                continue
+            else:
+                in_tags = False
+    meta["tags"] = tags
+    meta["scaling"] = "scaling" in {t.lower() for t in tags}
+    return meta
+
+
+def read_title(cook_path: Path) -> str:
+    return read_frontmatter(cook_path)["title"]
 
 
 def parse_shopping_list(stdout: str) -> list[dict]:
@@ -96,15 +144,18 @@ def main() -> int:
     for cook in sorted(recipes_root.rglob("*.cook")):
         rel = cook.relative_to(recipes_root).as_posix()
         chapter = cook.parent.name
-        title = read_title(cook)
+        meta = read_frontmatter(cook)
         ingredients = shopping_list_for(args.repo, rel)
         recipes.append(
             {
                 "id": rel,
-                "title": title,
+                "title": meta["title"],
                 "chapter": chapter,
                 "cookPath": rel,
                 "href": recipe_href(args.base_prefix, chapter, cook.stem),
+                "servings": meta["servings"],
+                "scaling": meta["scaling"],
+                "tags": meta["tags"],
                 "ingredientCount": len(ingredients),
                 "ingredients": ingredients,
             }

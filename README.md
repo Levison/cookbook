@@ -106,7 +106,7 @@ Deep provenance checklists (book photos, handwriting) belong in a GitHub Issue t
 
 **Plan a week of meals:** open **Plan** in the nav (or `/plan.html`), select whole recipes, then **Add to grocery**. Ingredients expand from composed recipes (the same way as the CLI shopping list) and land on **Grocery** grouped by store aisle when `config/aisle.conf` is present.
 
-**From one recipe:** each recipe page has **Add recipe to grocery**. Uncheck pantry staples first if you only want part of the list.
+**From one recipe:** each recipe page has **Add recipe to grocery**. Uncheck pantry staples first if you only want part of the list. Recipes tagged `scaling` also show a **Servings** control that multiplies ingredient quantities (and cooking-mode amounts); grocery export uses the scaled amounts. Share a scaled view with `?servings=N` on the recipe URL.
 
 On **Grocery**, check items off while shopping, remove a whole recipe with the chips at the top, or tap **Share list** to send a link (opens the phone share sheet, or copies the link). Opening that link loads the list on another phone. The list is also stored locally in the browser (`localStorage`).
 
