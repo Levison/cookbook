@@ -592,6 +592,26 @@
     return spans;
   }
 
+  /** Step mise-en-place lines like "all-purpose flour: 1/2 c," under each instruction. */
+  function collectStepQtySpans() {
+    var spans = [];
+    document.querySelectorAll('div.border-l-2.border-orange-300 span.inline-block').forEach(function (span) {
+      var text = span.textContent.replace(/\s+/g, ' ').trim();
+      if (text.indexOf(':') === -1) return;
+      if (!span.getAttribute('data-base-step-qty')) {
+        span.setAttribute('data-base-step-qty', text);
+      }
+      spans.push(span);
+    });
+    return spans;
+  }
+
+  function scaleStepQtyText(text, factor) {
+    var m = String(text || '').match(/^(.*?:\s*)(.+?)(,?)$/);
+    if (!m) return text;
+    return m[1] + scaleQuantityString(m[2].trim(), factor) + m[3];
+  }
+
   function readServingsFromQuery(baseServings) {
     try {
       var params = new URLSearchParams(window.location.search);
@@ -659,6 +679,7 @@
     if (baseServings <= 0) baseServings = 1;
 
     var qtySpans = collectQtySpans(found.lists);
+    var stepQtySpans = collectStepQtySpans();
     var currentServings = readServingsFromQuery(baseServings) || baseServings;
 
     var scaleBar = document.createElement('div');
@@ -711,6 +732,11 @@
       qtySpans.forEach(function (span) {
         var base = span.getAttribute('data-base-qty') || '';
         span.textContent = scaleQuantityString(base, factor);
+      });
+
+      stepQtySpans.forEach(function (span) {
+        var base = span.getAttribute('data-base-step-qty') || '';
+        span.textContent = scaleStepQtyText(base, factor);
       });
 
       updateServingsPill(servings);
