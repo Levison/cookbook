@@ -35,8 +35,14 @@ if [[ -n "$sample" ]]; then
 fi
 
 # Prefix used in HTML href/src attributes
-if [[ -n "$BASE" ]]; then
-  PREFIX="$BASE"
+if [[ -n "$BASE" && "$BASE" != "." && "$BASE" != "./" && "$BASE" != ".." && "$BASE" != "../.." ]]; then
+  # Absolute site prefix (e.g. /cookbook) from --base-url builds
+  if [[ "$BASE" == /* ]]; then
+    PREFIX="$BASE"
+  else
+    # Relative ../../static/... paths from CookCLI — serve assets from site root
+    PREFIX=""
+  fi
 else
   PREFIX=""
 fi
