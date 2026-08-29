@@ -66,6 +66,10 @@ python3 "$SRC/build-manifest.py" \
   --out "$SITE/static/data/recipes-manifest.json" \
   --base-prefix "$PREFIX"
 
+# CookCLI sorts sidebar ingredients alphabetically (case-sensitive). Restore
+# first-appearance order from the .cook steps before Pages deploy.
+python3 "$SRC/reorder-ingredients.py" --repo "$ROOT" --site "$SITE"
+
 CSS_HREF="$(prefix_path 'static/css/grocery.css')"
 JS_SRC="$(prefix_path 'static/js/grocery.js')"
 CSS_TAG="<link href=\"${CSS_HREF}\" rel=\"stylesheet\">"
