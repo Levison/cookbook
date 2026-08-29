@@ -54,6 +54,7 @@ Recipe step wording follows [WRITING.md](WRITING.md) — step order, heat levels
 | [Coq au Vin](recipes/mains/Coq%20au%20Vin.cook) | [Ina Garten / Food Network](https://www.foodnetwork.com/recipes/ina-garten/coq-au-vin-recipe4-2011654) |
 | [Skillet Lemon Dill Chicken Thighs](recipes/mains/Skillet%20Lemon%20Dill%20Chicken%20Thighs.cook) | [Damn Delicious](https://damndelicious.net/2019/09/24/skillet-lemon-dill-chicken-thighs/) |
 | [Vegetarian Shepherd's Pie](recipes/mains/Vegetarian%20Shepherds%20Pie.cook) | [Feasting At Home](https://www.feastingathome.com/vegetarian-shepherds-pie/) |
+| [Vegan Shepherd's Pie](recipes/mains/Vegan%20Shepherds%20Pie.cook) | [Feasting At Home](https://www.feastingathome.com/vegetarian-shepherds-pie/) (dairy-free) |
 | [Macarons au Chocolat](recipes/desserts/Macarons%20au%20Chocolat.cook) | Personal cookbook photo (fills with ganache) |
 | [Ganaches au Chocolat](recipes/basics/Ganaches%20au%20Chocolat.cook) | Personal cookbook photo |
 | [Pizza Sauce](recipes/basics/Pizza%20Sauce.cook) | [Food Wishes](https://foodwishes.blogspot.com/2012/02/pizza-sauce-lets-play-hide-little-fish.html) |
