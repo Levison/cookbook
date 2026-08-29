@@ -89,7 +89,8 @@
   }
 
   function formatAmount(n) {
-    var whole = Math.floor(n);
+    if (!isFinite(n) || n < 0) return String(n);
+    var whole = Math.floor(n + 1e-9);
     var frac = n - whole;
     var nice = [
       [0.25, '1/4'],
@@ -107,6 +108,35 @@
     }
     if (Math.abs(frac) < 0.01) return String(whole);
     return String(Math.round(n * 100) / 100);
+  }
+
+  function scaleNumericToken(token, factor) {
+    var n = parseFractionOrNumber(token);
+    if (n === null) return token;
+    return formatAmount(n * factor);
+  }
+
+  /** Scale a quantity string like "1/2 c", "4", or "4-5 cloves". */
+  function scaleQuantityString(qtyStr, factor) {
+    if (!qtyStr) return qtyStr;
+    if (!isFinite(factor) || Math.abs(factor - 1) < 1e-9) return String(qtyStr).trim();
+    qtyStr = String(qtyStr).trim();
+
+    var range = qtyStr.match(
+      /^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\s*-\s*(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(.*)$/
+    );
+    if (range) {
+      return (
+        scaleNumericToken(range[1], factor) +
+        '-' +
+        scaleNumericToken(range[2], factor) +
+        range[3]
+      ).trim();
+    }
+
+    var m = qtyStr.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(.*)$/);
+    if (!m) return qtyStr;
+    return (scaleNumericToken(m[1], factor) + m[2]).trim();
   }
 
   function combineQuantityList(qtyList) {
@@ -515,6 +545,232 @@
         exportCheckedFromPage();
       }
     });
+
+    loadManifest()
+      .then(function (data) {
+        var recipe = findRecipeInManifest(data);
+        if (recipe && recipe.scaling) {
+          enhanceRecipeScaling(found, recipe, toolbar);
+        }
+      })
+      .catch(function () {
+        /* manifest optional for grocery checkboxes */
+      });
+  }
+
+  function findRecipeInManifest(manifest) {
+    var path = decodeURIComponent(window.location.pathname || '');
+    var recipes = (manifest && manifest.recipes) || [];
+    var i;
+    for (i = 0; i < recipes.length; i += 1) {
+      var r = recipes[i];
+      if (r.href) {
+        var href = decodeURIComponent(r.href);
+        if (path === href || path.endsWith(href) || href.endsWith(path)) return r;
+      }
+      if (r.cookPath) {
+        var stem = r.cookPath.replace(/\.cook$/i, '');
+        if (path.indexOf('/recipe/' + stem + '.html') !== -1) return r;
+      }
+    }
+    return null;
+  }
+
+  function collectQtySpans(lists) {
+    var spans = [];
+    lists.forEach(function (ul) {
+      ul.querySelectorAll(':scope > li').forEach(function (li) {
+        var qtyEl = li.querySelector('span.text-orange-700, span[class*="text-orange"]');
+        var nameEl = li.querySelector('span.font-medium');
+        if (!qtyEl || qtyEl === nameEl) return;
+        if (!qtyEl.getAttribute('data-base-qty')) {
+          qtyEl.setAttribute('data-base-qty', qtyEl.textContent.replace(/\s+/g, ' ').trim());
+        }
+        spans.push(qtyEl);
+      });
+    });
+    return spans;
+  }
+
+  /** Step mise-en-place lines like "all-purpose flour: 1/2 c," under each instruction. */
+  function collectStepQtySpans() {
+    var spans = [];
+    document.querySelectorAll('div.border-l-2.border-orange-300 span.inline-block').forEach(function (span) {
+      var text = span.textContent.replace(/\s+/g, ' ').trim();
+      if (text.indexOf(':') === -1) return;
+      if (!span.getAttribute('data-base-step-qty')) {
+        span.setAttribute('data-base-step-qty', text);
+      }
+      spans.push(span);
+    });
+    return spans;
+  }
+
+  function scaleStepQtyText(text, factor) {
+    var m = String(text || '').match(/^(.*?:\s*)(.+?)(,?)$/);
+    if (!m) return text;
+    return m[1] + scaleQuantityString(m[2].trim(), factor) + m[3];
+  }
+
+  function readServingsFromQuery(baseServings) {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var raw = params.get('servings') || params.get('s');
+      if (!raw) return null;
+      var n = parseFloat(raw);
+      if (!isFinite(n) || n <= 0) return null;
+      return n;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeServingsToQuery(servings) {
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set('servings', String(servings));
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function updateServingsPill(servings) {
+    var pill = document.querySelector('.metadata-servings');
+    if (!pill) return;
+    if (!pill.getAttribute('data-base-label')) {
+      pill.setAttribute('data-base-label', pill.textContent.trim());
+    }
+    var label = Number(servings) === 1 ? '1 serving' : servings + ' servings';
+    pill.textContent = '👥 ' + label;
+  }
+
+  function scaleCookingModeData(factor) {
+    var el = document.getElementById('cooking-mode-data');
+    if (!el) return;
+    if (!el.getAttribute('data-base-json')) {
+      el.setAttribute('data-base-json', el.textContent);
+    }
+    try {
+      var data = JSON.parse(el.getAttribute('data-base-json'));
+      data.scale = factor;
+      (data.sections || []).forEach(function (section) {
+        (section.ingredients || []).forEach(function (ing) {
+          if (ing.quantity != null && ing.quantity !== '') {
+            ing.quantity = scaleQuantityString(String(ing.quantity), factor);
+          }
+        });
+        (section.steps || []).forEach(function (step) {
+          (step.ingredients || []).forEach(function (ing) {
+            if (ing.quantity != null && ing.quantity !== '') {
+              ing.quantity = scaleQuantityString(String(ing.quantity), factor);
+            }
+          });
+        });
+      });
+      el.textContent = JSON.stringify(data);
+    } catch (e) {
+      /* leave original */
+    }
+  }
+
+  function enhanceRecipeScaling(found, recipe, groceryToolbar) {
+    var baseServings = Number(recipe.servings) || 1;
+    if (baseServings <= 0) baseServings = 1;
+
+    var qtySpans = collectQtySpans(found.lists);
+    var stepQtySpans = collectStepQtySpans();
+    var currentServings = readServingsFromQuery(baseServings) || baseServings;
+
+    var scaleBar = document.createElement('div');
+    scaleBar.className = 'recipe-scale-bar print:hidden';
+    scaleBar.innerHTML =
+      '<span class="recipe-scale-label">Servings</span>' +
+      '<div class="recipe-scale-controls" role="group" aria-label="Adjust servings">' +
+      '<button type="button" class="recipe-scale-btn" data-scale="dec" aria-label="Fewer servings">−</button>' +
+      '<input type="number" class="recipe-scale-input" id="recipe-servings" min="1" step="1" inputmode="numeric" />' +
+      '<button type="button" class="recipe-scale-btn" data-scale="inc" aria-label="More servings">+</button>' +
+      '</div>' +
+      '<span class="recipe-scale-base">Base: ' +
+      baseServings +
+      '</span>';
+
+    // Place scale controls directly under the Ingredients heading, above grocery toolbar
+    found.heading.insertAdjacentElement('afterend', scaleBar);
+
+    var input = scaleBar.querySelector('.recipe-scale-input');
+    input.value = String(currentServings);
+
+    // Hidden CookCLI-compatible scale multiplier for keyboard shortcuts (when enabled)
+    var hiddenScale = document.getElementById('scale');
+    if (!hiddenScale) {
+      hiddenScale = document.createElement('input');
+      hiddenScale.type = 'hidden';
+      hiddenScale.id = 'scale';
+      hiddenScale.min = '0.25';
+      hiddenScale.max = '20';
+      hiddenScale.step = '0.25';
+      document.body.appendChild(hiddenScale);
+    }
+
+    function applyServings(servings, opts) {
+      opts = opts || {};
+      servings = Math.round(Number(servings) * 100) / 100;
+      if (!isFinite(servings) || servings <= 0) servings = baseServings;
+      // Prefer whole servings for the stepper UX
+      if (Math.abs(servings - Math.round(servings)) < 1e-9) {
+        servings = Math.round(servings);
+      }
+      if (servings < 1) servings = 1;
+
+      currentServings = servings;
+      input.value = String(servings);
+
+      var factor = servings / baseServings;
+      hiddenScale.value = String(Math.round(factor * 1000) / 1000);
+
+      qtySpans.forEach(function (span) {
+        var base = span.getAttribute('data-base-qty') || '';
+        span.textContent = scaleQuantityString(base, factor);
+      });
+
+      stepQtySpans.forEach(function (span) {
+        var base = span.getAttribute('data-base-step-qty') || '';
+        span.textContent = scaleStepQtyText(base, factor);
+      });
+
+      updateServingsPill(servings);
+      scaleCookingModeData(factor);
+
+      if (!opts.skipUrl) writeServingsToQuery(servings);
+    }
+
+    scaleBar.addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-scale]');
+      if (!btn) return;
+      var act = btn.getAttribute('data-scale');
+      var next = currentServings + (act === 'inc' ? 1 : -1);
+      applyServings(next);
+    });
+
+    input.addEventListener('change', function () {
+      applyServings(input.value);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyServings(input.value);
+        input.blur();
+      }
+    });
+
+    hiddenScale.addEventListener('change', function () {
+      var factor = parseFloat(hiddenScale.value);
+      if (!isFinite(factor) || factor <= 0) return;
+      applyServings(baseServings * factor);
+    });
+
+    applyServings(currentServings, { skipUrl: !readServingsFromQuery(baseServings) });
   }
 
   function exportCheckedFromPage() {
