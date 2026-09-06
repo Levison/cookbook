@@ -167,7 +167,7 @@ End with serving, resting, or storage when it helps:
 ## Consistency across the book
 
 - Use generic ingredient names, not brands, unless the brand matters (`@naan` not “Trader Joe's naan” in steps — put store notes in the headnote).
-- Pick one term per ingredient within a recipe (`scallions` or `green onions`, not both).
+- Prefer `scallions` over `green onions` or `spring onions`; use one term consistently.
 - Use `@kosher salt{}` and `@black pepper{}` (or `@freshly ground black pepper{}`) for “season to taste” unless the recipe specifies otherwise.
 - Keep `course`, `tags`, and folder placement aligned with README taxonomy.
 
