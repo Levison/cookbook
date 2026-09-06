@@ -110,7 +110,7 @@ Deep provenance checklists (book photos, handwriting) belong in a GitHub Issue t
 
 **From one recipe:** each recipe page has **Add recipe to grocery**. Uncheck pantry staples first if you only want part of the list. Recipes tagged `scaling` also show a **Servings** control that multiplies ingredient quantities (and cooking-mode amounts); grocery export uses the scaled amounts. Share a scaled view with `?servings=N` on the recipe URL.
 
-On **Grocery**, check items off while shopping, type extras by hand, remove a whole recipe with the chips at the top, or tap **Copy list** to put a plain-text list on the clipboard (works on phones). The list is stored locally in the browser (`localStorage`).
+On **Grocery**, check items off while shopping, type extras by hand, or tap **Copy list** to put a plain-text list on the clipboard (works on phones). The list is stored locally in the browser (`localStorage`).
 
 This is layered on after `cook build web` via `site-enhancements/inject.sh` (wired into the Pages workflow), which also builds `static/data/recipes-manifest.json`.
 

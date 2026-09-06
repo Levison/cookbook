@@ -1071,40 +1071,6 @@
         return;
       }
 
-      var recipesOnList = {};
-      items.forEach(function (item) {
-        (item.contributions || []).forEach(function (c) {
-          if (!c.recipe) return;
-          recipesOnList[c.recipe] = (recipesOnList[c.recipe] || 0) + 1;
-        });
-      });
-      var recipeNames = Object.keys(recipesOnList);
-      if (recipeNames.length) {
-        var recipeBar = document.createElement('div');
-        recipeBar.className = 'grocery-recipe-bar print:hidden';
-        recipeBar.innerHTML =
-          '<span class="grocery-recipe-bar-label">' +
-          recipeNames.length +
-          ' recipe' +
-          (recipeNames.length === 1 ? '' : 's') +
-          ':</span> ';
-        recipeNames.forEach(function (name) {
-          var chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'grocery-recipe-chip';
-          chip.textContent = name + ' ×';
-          chip.title = 'Remove all items from ' + name;
-          chip.addEventListener('click', function () {
-            if (!confirm('Remove all grocery items from “' + name + '”?')) return;
-            saveCart(removeRecipeFromCart(loadCart(), name));
-            draw();
-            toast('Removed ' + name);
-          });
-          recipeBar.appendChild(chip);
-        });
-        root.appendChild(recipeBar);
-      }
-
       var sorted = sortItemsForDisplay(items);
       var listWrap = document.createElement('div');
       listWrap.className = 'grocery-list-wrap';
