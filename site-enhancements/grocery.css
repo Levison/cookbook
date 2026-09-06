@@ -242,6 +242,65 @@
   margin-bottom: 1.25rem;
 }
 
+.grocery-add-form {
+  margin-bottom: 1rem;
+}
+
+.grocery-add-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #9a3412;
+  margin-bottom: 0.4rem;
+}
+
+.grocery-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.grocery-add-name,
+.grocery-add-qty {
+  font-size: 1rem;
+  line-height: 1.25rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #fdba74;
+  background: #fff;
+  color: #1c1917;
+  min-width: 0;
+}
+
+.grocery-add-name {
+  flex: 1 1 10rem;
+}
+
+.grocery-add-qty {
+  flex: 0 1 5.5rem;
+  width: 5.5rem;
+}
+
+.grocery-add-form button {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: linear-gradient(to right, #f97316, #eab308);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.grocery-add-form button:active {
+  transform: scale(0.98);
+}
+
 .grocery-empty {
   padding: 1.5rem;
   border-radius: 1rem;
@@ -302,13 +361,6 @@
   margin-left: 0.35rem;
 }
 
-.grocery-item-recipe {
-  display: block;
-  font-size: 0.75rem;
-  color: #78716c;
-  margin-top: 0.15rem;
-}
-
 .grocery-item-remove {
   border: none;
   background: transparent;
@@ -334,9 +386,19 @@
 }
 
 .dark .grocery-hint,
-.dark .grocery-page .grocery-sub,
-.dark .grocery-item-recipe {
+.dark .grocery-page .grocery-sub {
   color: #9ca3af;
+}
+
+.dark .grocery-add-label {
+  color: #fdba74;
+}
+
+.dark .grocery-add-name,
+.dark .grocery-add-qty {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
 }
 
 .dark .grocery-empty {
@@ -566,6 +628,7 @@
 @media print {
   .grocery-toolbar,
   .grocery-actions,
+  .grocery-add-form,
   .grocery-item-remove,
   .grocery-toast,
   .grocery-nav-link,
