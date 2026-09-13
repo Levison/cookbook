@@ -625,6 +625,113 @@
   color: #9ca3af;
 }
 
+.grocery-copy-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(28, 25, 23, 0.45);
+}
+
+.grocery-copy-sheet-panel {
+  width: min(28rem, 100%);
+  max-height: min(85vh, 40rem);
+  overflow: auto;
+  padding: 1.1rem 1rem 1rem;
+  border-radius: 1rem 1rem 0.75rem 0.75rem;
+  background: #fff;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+}
+
+.grocery-copy-sheet-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #9a3412;
+}
+
+.grocery-copy-sheet-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #57534e;
+}
+
+.grocery-copy-sheet-text {
+  display: block;
+  width: 100%;
+  min-height: 10rem;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid #fdba74;
+  background: #fff7ed;
+  color: #1c1917;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  resize: vertical;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.grocery-copy-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.grocery-copy-sheet-actions button {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1px solid #fdba74;
+  background: #fff7ed;
+  color: #c2410c;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.grocery-copy-sheet-actions button.grocery-primary {
+  background: linear-gradient(to right, #f97316, #eab308);
+  border-color: transparent;
+  color: #fff;
+}
+
+.dark .grocery-copy-sheet-panel {
+  background: #1f2937;
+}
+
+.dark .grocery-copy-sheet-title {
+  color: #fdba74;
+}
+
+.dark .grocery-copy-sheet-hint {
+  color: #9ca3af;
+}
+
+.dark .grocery-copy-sheet-text {
+  background: #111827;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.dark .grocery-copy-sheet-actions button {
+  background: #374151;
+  border-color: #4b5563;
+  color: #fdba74;
+}
+
+.dark .grocery-copy-sheet-actions button.grocery-primary {
+  background: linear-gradient(to right, #ea580c, #ca8a04);
+  color: #fff;
+  border-color: transparent;
+}
+
 @media print {
   .grocery-toolbar,
   .grocery-actions,
@@ -636,7 +743,8 @@
   .plan-toolbar,
   .plan-sticky-bar,
   .grocery-recipe-bar,
-  .recipe-scale-bar {
+  .recipe-scale-bar,
+  .grocery-copy-sheet {
     display: none !important;
   }
 }

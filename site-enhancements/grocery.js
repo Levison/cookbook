@@ -849,55 +849,166 @@
     });
   }
 
-  /** Mobile-friendly clipboard copy (iOS/Android + desktop). */
-  function copyText(text) {
-    return new Promise(function (resolve, reject) {
-      function fallbackCopy() {
-        var ta = document.createElement('textarea');
-        ta.value = text;
-        ta.setAttribute('readonly', '');
-        ta.setAttribute('aria-hidden', 'true');
-        ta.style.position = 'fixed';
-        ta.style.top = '0';
-        ta.style.left = '0';
-        ta.style.width = '2em';
-        ta.style.height = '2em';
-        ta.style.padding = '0';
-        ta.style.border = 'none';
-        ta.style.outline = 'none';
-        ta.style.boxShadow = 'none';
-        ta.style.background = 'transparent';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
+  /**
+   * Synchronous copy via execCommand. Must run inside the click handler —
+   * Brave/iOS often drop user-activation once clipboard.writeText rejects.
+   */
+  function tryExecCommandCopy(text, existingEl) {
+    var ta = existingEl;
+    var created = false;
+    if (!ta) {
+      ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.setAttribute('aria-hidden', 'true');
+      // Keep in-viewport with tiny opacity (iOS/Brave ignore off-screen / opacity:0).
+      ta.style.cssText =
+        'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;margin:0;' +
+        'border:0;outline:none;box-shadow:none;background:transparent;opacity:0.01;' +
+        'font-size:16px;z-index:-1;';
+      document.body.appendChild(ta);
+      created = true;
+    }
 
-        var range = document.createRange();
-        range.selectNodeContents(ta);
-        var selection = window.getSelection();
-        if (selection) {
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-        ta.focus();
-        ta.setSelectionRange(0, text.length);
+    var prevRange = null;
+    var selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      prevRange = selection.getRangeAt(0);
+    }
 
-        var ok = false;
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+
+    var ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (err) {
+      ok = false;
+    }
+
+    if (selection) {
+      selection.removeAllRanges();
+      if (prevRange) {
         try {
-          ok = document.execCommand('copy');
-        } catch (err) {
-          ok = false;
+          selection.addRange(prevRange);
+        } catch (e) {
+          /* ignore */
         }
-        if (selection) selection.removeAllRanges();
-        document.body.removeChild(ta);
-        if (ok) resolve();
-        else reject(new Error('copy failed'));
       }
+    }
+    if (created) document.body.removeChild(ta);
+    return ok;
+  }
 
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(resolve, fallbackCopy);
+  function copyText(text) {
+    // Prefer sync path first so Brave mobile keeps the user gesture.
+    if (tryExecCommandCopy(text)) {
+      return Promise.resolve('exec');
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return 'clipboard';
+      });
+    }
+
+    return Promise.reject(new Error('copy failed'));
+  }
+
+  function closeCopySheet() {
+    var sheet = document.getElementById('grocery-copy-sheet');
+    if (sheet) sheet.remove();
+  }
+
+  /** Last-resort UI when Brave/Shields block clipboard: select + long-press, or share text. */
+  function showCopySheet(text) {
+    closeCopySheet();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'grocery-copy-sheet';
+    overlay.className = 'grocery-copy-sheet';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Copy grocery list');
+
+    var canShare =
+      typeof navigator.share === 'function' &&
+      (!navigator.canShare || navigator.canShare({ text: text }));
+
+    overlay.innerHTML =
+      '<div class="grocery-copy-sheet-panel">' +
+      '<h2 class="grocery-copy-sheet-title">Copy list</h2>' +
+      '<p class="grocery-copy-sheet-hint">' +
+      'This browser blocked clipboard access. Tap <strong>Select all</strong>, then long-press → Copy. ' +
+      (canShare ? 'Or use <strong>Share</strong> to send the list as plain text.' : '') +
+      '</p>' +
+      '<textarea class="grocery-copy-sheet-text" readonly rows="10"></textarea>' +
+      '<div class="grocery-copy-sheet-actions">' +
+      '<button type="button" class="grocery-primary" data-copy-act="select">Select all</button>' +
+      '<button type="button" data-copy-act="retry">Try copy again</button>' +
+      (canShare ? '<button type="button" data-copy-act="share">Share</button>' : '') +
+      '<button type="button" data-copy-act="close">Done</button>' +
+      '</div>' +
+      '</div>';
+
+    var ta = overlay.querySelector('.grocery-copy-sheet-text');
+    ta.value = text;
+
+    function selectAll() {
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+    }
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) {
+        closeCopySheet();
         return;
       }
-      fallbackCopy();
+      var btn = e.target.closest('button[data-copy-act]');
+      if (!btn) return;
+      var act = btn.getAttribute('data-copy-act');
+      if (act === 'close') {
+        closeCopySheet();
+      } else if (act === 'select') {
+        selectAll();
+      } else if (act === 'retry') {
+        selectAll();
+        if (tryExecCommandCopy(text, ta)) {
+          closeCopySheet();
+          toast('List copied');
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(
+            function () {
+              closeCopySheet();
+              toast('List copied');
+            },
+            function () {
+              toast('Still blocked — long-press the text to copy');
+              selectAll();
+            }
+          );
+          return;
+        }
+        toast('Still blocked — long-press the text to copy');
+      } else if (act === 'share') {
+        navigator
+          .share({ title: 'Grocery list', text: text })
+          .then(function () {
+            closeCopySheet();
+          })
+          .catch(function () {
+            /* user cancelled */
+          });
+      }
     });
+
+    document.body.appendChild(overlay);
+    // Select after paint so mobile keyboards/selection UI can attach.
+    setTimeout(selectAll, 50);
   }
 
   function copyListToClipboard(items) {
@@ -906,13 +1017,45 @@
       return;
     }
 
-    copyText(formatPlainText(items))
+    var text = formatPlainText(items);
+
+    // Sync attempt happens here, still inside the click handler.
+    copyText(text)
       .then(function () {
         toast('List copied');
       })
       .catch(function () {
-        toast('Could not copy list');
+        showCopySheet(text);
       });
+  }
+
+  /** Plain-text system share (no URL) — usually works on Brave when clipboard does not. */
+  function shareListPlainText(items) {
+    if (!items.length) {
+      toast('Add items before sharing');
+      return;
+    }
+    var text = formatPlainText(items);
+    if (typeof navigator.share !== 'function') {
+      copyListToClipboard(items);
+      return;
+    }
+    navigator
+      .share({ title: 'Grocery list', text: text })
+      .catch(function () {
+        /* cancelled or blocked — fall back to copy sheet */
+        showCopySheet(text);
+      });
+  }
+
+  function canSharePlainText() {
+    if (typeof navigator.share !== 'function') return false;
+    try {
+      if (navigator.canShare && !navigator.canShare({ text: 'x' })) return false;
+    } catch (e) {
+      return false;
+    }
+    return true;
   }
 
   function addManualItem(name, quantity) {
@@ -1025,6 +1168,9 @@
       if (items.length) {
         actions.innerHTML =
           '<button type="button" class="grocery-primary" data-act="copy">Copy list</button>' +
+          (canSharePlainText()
+            ? '<button type="button" data-act="share">Share</button>'
+            : '') +
           '<button type="button" data-act="clear-bought">Clear checked</button>' +
           '<button type="button" data-act="clear-all">Clear all</button>';
       }
@@ -1044,6 +1190,8 @@
         var cart = loadCart();
         if (act === 'copy') {
           copyListToClipboard(cart);
+        } else if (act === 'share') {
+          shareListPlainText(cart);
         } else if (act === 'clear-bought') {
           saveCart(
             cart.filter(function (item) {
