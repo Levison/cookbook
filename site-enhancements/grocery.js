@@ -3,7 +3,7 @@
  *
  * Plan page: select whole recipes → add expanded ingredients to grocery.
  * Recipe page: add the whole recipe (or a pantry-filtered subset).
- * Grocery page: check off while shopping; grouped by aisle when available.
+ * Grocery page: check off while shopping; sorted and grouped by aisle.conf order.
  * Duplicate ingredients (same name) combine into one line with summed quantities.
  */
 (function () {
@@ -775,51 +775,78 @@
   function exportCheckedFromPage() {
     var title = recipeTitle();
     var key = recipeKey();
-    var selected = [];
 
-    document.querySelectorAll('.grocery-ingredient-li').forEach(function (li) {
-      var cb = li.querySelector('.grocery-check');
-      if (!cb || !cb.checked) return;
-      var parsed = parseIngredientLi(li);
-      if (!parsed) return;
-      selected.push(
-        cartItemFromIngredient(parsed, {
-          title: title,
-          path: key,
-          id: ''
-        })
-      );
-    });
+    function collectSelected(aisleByIngredient, recipe) {
+      var selected = [];
+      var recipeAisle = {};
+      if (recipe && recipe.ingredients) {
+        recipe.ingredients.forEach(function (ing) {
+          if (ing && ing.name) {
+            recipeAisle[normalizeIngredientName(ing.name)] = ing.aisle || '';
+          }
+        });
+      }
 
-    if (!selected.length) {
-      toast('Check at least one ingredient first');
-      return;
+      document.querySelectorAll('.grocery-ingredient-li').forEach(function (li) {
+        var cb = li.querySelector('.grocery-check');
+        if (!cb || !cb.checked) return;
+        var parsed = parseIngredientLi(li);
+        if (!parsed) return;
+        var nameKey = normalizeIngredientName(parsed.name);
+        parsed.aisle =
+          recipeAisle[nameKey] || lookupAisle(parsed.name, aisleByIngredient || {}) || '';
+        selected.push(
+          cartItemFromIngredient(parsed, {
+            title: title,
+            path: key,
+            id: (recipe && recipe.id) || ''
+          })
+        );
+      });
+      return selected;
     }
 
-    var result = appendItemsToCart(selected);
-    if (result.added === 0) {
-      toast('Those items are already on your grocery list');
-    } else {
-      toast('Added ' + result.added + ' item' + (result.added === 1 ? '' : 's') + ' · open Grocery');
+    function finish(selected) {
+      if (!selected.length) {
+        toast('Check at least one ingredient first');
+        return;
+      }
+
+      var result = appendItemsToCart(selected);
+      if (result.added === 0) {
+        toast('Those items are already on your grocery list');
+      } else {
+        toast('Added ' + result.added + ' item' + (result.added === 1 ? '' : 's') + ' · open Grocery');
+      }
     }
+
+    loadManifest()
+      .then(function (data) {
+        var recipe = findRecipeInManifest(data);
+        finish(collectSelected(data.aisleByIngredient || {}, recipe));
+      })
+      .catch(function () {
+        finish(collectSelected({}, null));
+      });
   }
 
-  function formatPlainText(items) {
+  function formatPlainText(items, aisleOrder) {
     if (!items.length) return 'Grocery list is empty.';
     var lines = ['Grocery list', ''];
+    var sorted = sortItemsForDisplay(items, aisleOrder);
     var byAisle = {};
-    var aisleOrder = [];
+    var aisleNames = [];
 
-    items.forEach(function (item) {
-      var a = item.aisle || 'other';
+    sorted.forEach(function (entry) {
+      var a = entry.item.aisle || 'other';
       if (!byAisle[a]) {
         byAisle[a] = [];
-        aisleOrder.push(a);
+        aisleNames.push(a);
       }
-      byAisle[a].push(item);
+      byAisle[a].push(entry.item);
     });
 
-    var hasAisle = aisleOrder.some(function (a) {
+    var hasAisle = aisleNames.some(function (a) {
       return a && a !== 'other';
     });
 
@@ -830,13 +857,15 @@
     }
 
     if (hasAisle) {
-      aisleOrder.forEach(function (aisle) {
+      aisleNames.forEach(function (aisle) {
         lines.push(titleCaseAisle(aisle));
         byAisle[aisle].forEach(pushItemLine);
         lines.push('');
       });
     } else {
-      items.forEach(pushItemLine);
+      sorted.forEach(function (entry) {
+        pushItemLine(entry.item);
+      });
     }
 
     return lines.join('\n').trim() + '\n';
@@ -1011,13 +1040,13 @@
     setTimeout(selectAll, 50);
   }
 
-  function copyListToClipboard(items) {
+  function copyListToClipboard(items, aisleOrder) {
     if (!items.length) {
       toast('Add items before copying');
       return;
     }
 
-    var text = formatPlainText(items);
+    var text = formatPlainText(items, aisleOrder);
 
     // Sync attempt happens here, still inside the click handler.
     copyText(text)
@@ -1030,14 +1059,14 @@
   }
 
   /** Plain-text system share (no URL) — usually works on Brave when clipboard does not. */
-  function shareListPlainText(items) {
+  function shareListPlainText(items, aisleOrder) {
     if (!items.length) {
       toast('Add items before sharing');
       return;
     }
-    var text = formatPlainText(items);
+    var text = formatPlainText(items, aisleOrder);
     if (typeof navigator.share !== 'function') {
-      copyListToClipboard(items);
+      copyListToClipboard(items, aisleOrder);
       return;
     }
     navigator
@@ -1058,17 +1087,18 @@
     return true;
   }
 
-  function addManualItem(name, quantity) {
+  function addManualItem(name, quantity, aisleByIngredient) {
     name = String(name || '').trim();
     if (!name) return false;
     quantity = String(quantity || '').trim();
+    var aisle = lookupAisle(name, aisleByIngredient || {});
 
     appendItemsToCart([
       recomputeCombinedItem({
         id: ingredientKey(name),
         name: name,
         quantity: quantity,
-        aisle: '',
+        aisle: aisle,
         recipe: '',
         recipePath: '',
         recipeId: '',
@@ -1087,13 +1117,41 @@
     return true;
   }
 
-  function sortItemsForDisplay(items) {
-    var aisleRank = {};
-    var rank = 0;
+  function lookupAisle(name, aisleByIngredient) {
+    if (!name || !aisleByIngredient) return '';
+    var key = normalizeIngredientName(name);
+    return aisleByIngredient[key] || '';
+  }
+
+  function enrichCartAisles(items, aisleByIngredient) {
+    if (!aisleByIngredient) return items;
+    var changed = false;
     items.forEach(function (item) {
-      var a = item.aisle || 'other';
-      if (!(a in aisleRank)) aisleRank[a] = rank++;
+      if (item.aisle && item.aisle !== 'other') return;
+      var aisle = lookupAisle(item.name, aisleByIngredient);
+      if (aisle) {
+        item.aisle = aisle;
+        changed = true;
+      }
     });
+    if (changed) saveCart(items);
+    return items;
+  }
+
+  /** Rank aisles by config/aisle.conf order; unknown sections before "other". */
+  function aisleSortRank(aisle, aisleOrder) {
+    var a = (aisle || 'other').toLowerCase();
+    if (a === 'other' || !a) return 10000;
+    if (aisleOrder && aisleOrder.length) {
+      var idx = aisleOrder.indexOf(a);
+      if (idx !== -1) return idx;
+      return 9000 + a.charCodeAt(0);
+    }
+    return a.localeCompare('other') === 0 ? 10000 : 0;
+  }
+
+  function sortItemsForDisplay(items, aisleOrder) {
+    aisleOrder = aisleOrder || [];
     return items
       .map(function (item, index) {
         return { item: item, index: index };
@@ -1101,7 +1159,10 @@
       .sort(function (a, b) {
         var aa = a.item.aisle || 'other';
         var ba = b.item.aisle || 'other';
-        if (aisleRank[aa] !== aisleRank[ba]) return aisleRank[aa] - aisleRank[ba];
+        var ra = aisleSortRank(aa, aisleOrder);
+        var rb = aisleSortRank(ba, aisleOrder);
+        if (ra !== rb) return ra - rb;
+        if (aa !== ba) return aa.localeCompare(ba);
         return (a.item.name || '').localeCompare(b.item.name || '');
       });
   }
@@ -1110,8 +1171,11 @@
     var root = document.getElementById('grocery-root');
     if (!root) return;
 
+    var aisleOrder = [];
+    var aisleByIngredient = {};
+
     function draw() {
-      var items = loadCart();
+      var items = enrichCartAisles(loadCart(), aisleByIngredient);
       root.innerHTML = '';
 
       var title = document.createElement('h1');
@@ -1130,7 +1194,7 @@
           items.length +
           ' item' +
           (items.length === 1 ? '' : 's') +
-          ' · tap to check off while shopping · Copy list to paste into a message';
+          ' · sorted by aisle · tap to check off while shopping · Copy list to paste into a message';
       }
       root.appendChild(sub);
 
@@ -1150,7 +1214,7 @@
         var qtyInput = addForm.querySelector('#grocery-add-qty');
         var name = nameInput ? nameInput.value : '';
         var qty = qtyInput ? qtyInput.value : '';
-        if (!addManualItem(name, qty)) {
+        if (!addManualItem(name, qty, aisleByIngredient)) {
           toast('Type an item name first');
           if (nameInput) nameInput.focus();
           return;
@@ -1187,11 +1251,11 @@
         var btn = e.target.closest('button[data-act]');
         if (!btn) return;
         var act = btn.getAttribute('data-act');
-        var cart = loadCart();
+        var cart = enrichCartAisles(loadCart(), aisleByIngredient);
         if (act === 'copy') {
-          copyListToClipboard(cart);
+          copyListToClipboard(cart, aisleOrder);
         } else if (act === 'share') {
-          shareListPlainText(cart);
+          shareListPlainText(cart, aisleOrder);
         } else if (act === 'clear-bought') {
           saveCart(
             cart.filter(function (item) {
@@ -1219,7 +1283,7 @@
         return;
       }
 
-      var sorted = sortItemsForDisplay(items);
+      var sorted = sortItemsForDisplay(items, aisleOrder);
       var listWrap = document.createElement('div');
       listWrap.className = 'grocery-list-wrap';
 
@@ -1305,7 +1369,16 @@
       updateBadges();
     }
 
-    draw();
+    root.innerHTML = '<p class="grocery-loading">Loading grocery list…</p>';
+    loadManifest()
+      .then(function (data) {
+        aisleOrder = data.aisles || [];
+        aisleByIngredient = data.aisleByIngredient || {};
+        draw();
+      })
+      .catch(function () {
+        draw();
+      });
   }
 
   var manifestCache = null;

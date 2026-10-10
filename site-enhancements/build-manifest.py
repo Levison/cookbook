@@ -105,6 +105,35 @@ def parse_shopping_list(stdout: str) -> list[dict]:
     return items
 
 
+def normalize_ingredient_key(name: str) -> str:
+    return re.sub(r"\s+", " ", (name or "").strip().lower())
+
+
+def parse_aisle_conf(aisle_conf: Path) -> tuple[list[str], dict[str, str]]:
+    """Return (section order, normalized ingredient name → aisle) from aisle.conf."""
+    order: list[str] = []
+    by_name: dict[str, str] = {}
+    if not aisle_conf.is_file():
+        return order, by_name
+
+    aisle = "other"
+    for raw in aisle_conf.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        sec = SECTION.match(line)
+        if sec:
+            aisle = sec.group(1).strip().lower()
+            if aisle not in order:
+                order.append(aisle)
+            continue
+        for alias in line.split("|"):
+            key = normalize_ingredient_key(alias)
+            if key and key not in by_name:
+                by_name[key] = aisle
+    return order, by_name
+
+
 def shopping_list_for(repo: Path, rel_cook: str) -> list[dict]:
     aisle_conf = repo / "config" / "aisle.conf"
     cmd = ["cook", "shopping-list", "--base-path", "recipes", rel_cook]
@@ -140,12 +169,23 @@ def main() -> int:
 
     recipes_root = args.repo / "recipes"
     recipes: list[dict] = []
+    aisle_conf = args.repo / "config" / "aisle.conf"
+    aisle_order, aisle_by_ingredient = parse_aisle_conf(aisle_conf)
 
     for cook in sorted(recipes_root.rglob("*.cook")):
         rel = cook.relative_to(recipes_root).as_posix()
         chapter = cook.parent.name
         meta = read_frontmatter(cook)
         ingredients = shopping_list_for(args.repo, rel)
+        # Prefer cook shopping-list aisle, but fill gaps from aisle.conf aliases.
+        for ing in ingredients:
+            key = normalize_ingredient_key(ing.get("name", ""))
+            if key and (not ing.get("aisle") or ing["aisle"] == "other"):
+                mapped = aisle_by_ingredient.get(key)
+                if mapped:
+                    ing["aisle"] = mapped
+            if key and ing.get("aisle") and key not in aisle_by_ingredient:
+                aisle_by_ingredient[key] = ing["aisle"]
         recipes.append(
             {
                 "id": rel,
@@ -166,6 +206,8 @@ def main() -> int:
         "generatedBy": "site-enhancements/build-manifest.py",
         "recipeCount": len(recipes),
         "chapters": chapters,
+        "aisles": aisle_order,
+        "aisleByIngredient": aisle_by_ingredient,
         "recipes": recipes,
     }
 
