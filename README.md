@@ -48,6 +48,7 @@ Recipe step wording follows [WRITING.md](WRITING.md) — step order, heat levels
 
 | Recipe | Source |
 | --- | --- |
+| [Chicken Stroganoff](recipes/mains/Chicken%20Stroganoff.cook) | [Delish](https://www.delish.com/cooking/recipe-ideas/a25647973/chicken-stroganoff-recipe/) |
 | [Easy Creamy Chicken Marsala](recipes/mains/Creamy%20Chicken%20Marsala.cook) | [Cafe Delites](https://cafedelites.com/creamy-chicken-marsala/) |
 | [Chicken in White Wine Sauce](recipes/mains/Chicken%20in%20White%20Wine%20Sauce.cook) (fake Marsala) | [Kitchen Sanctuary](https://www.kitchensanctuary.com/chicken-with-creamy-white-wine-garlic-sauce/) |
 | [Chipotle Chicken Quinoa Burrito Bowl](recipes/mains/Chipotle%20Chicken%20Quinoa%20Burrito%20Bowl.cook) | [EatingWell](https://www.eatingwell.com/recipe/254609/chipotle-chicken-quinoa-burrito-bowl/) |
