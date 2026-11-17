@@ -14,6 +14,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Allow `python3 site-enhancements/build-manifest.py` without PYTHONPATH.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from nutritionlib import NutritionIndex, compute_recipe_nutrition  # noqa: E402
+
 FRONTMATTER_TITLE = re.compile(r"^title:\s*(.+)$", re.MULTILINE)
 FRONTMATTER_SERVINGS = re.compile(r"^servings:\s*(.+)$", re.MULTILINE)
 SECTION = re.compile(r"^\[([^\]]+)\]\s*$")
@@ -171,6 +175,12 @@ def main() -> int:
     recipes: list[dict] = []
     aisle_conf = args.repo / "config" / "aisle.conf"
     aisle_order, aisle_by_ingredient = parse_aisle_conf(aisle_conf)
+    nutrition_path = args.repo / "config" / "nutrition.json"
+    nutrition_index = NutritionIndex.from_path(nutrition_path) if nutrition_path.is_file() else None
+    if nutrition_path.is_file() and nutrition_index is None:
+        print(f"warn: could not load {nutrition_path}", file=sys.stderr)
+    elif not nutrition_path.is_file():
+        print(f"warn: {nutrition_path} missing; nutrition omitted", file=sys.stderr)
 
     for cook in sorted(recipes_root.rglob("*.cook")):
         rel = cook.relative_to(recipes_root).as_posix()
@@ -186,20 +196,33 @@ def main() -> int:
                     ing["aisle"] = mapped
             if key and ing.get("aisle") and key not in aisle_by_ingredient:
                 aisle_by_ingredient[key] = ing["aisle"]
-        recipes.append(
-            {
-                "id": rel,
-                "title": meta["title"],
-                "chapter": chapter,
-                "cookPath": rel,
-                "href": recipe_href(args.base_prefix, chapter, cook.stem),
-                "servings": meta["servings"],
-                "scaling": meta["scaling"],
-                "tags": meta["tags"],
-                "ingredientCount": len(ingredients),
-                "ingredients": ingredients,
+        entry: dict = {
+            "id": rel,
+            "title": meta["title"],
+            "chapter": chapter,
+            "cookPath": rel,
+            "href": recipe_href(args.base_prefix, chapter, cook.stem),
+            "servings": meta["servings"],
+            "scaling": meta["scaling"],
+            "tags": meta["tags"],
+            "ingredientCount": len(ingredients),
+            "ingredients": ingredients,
+        }
+        if nutrition_index is not None:
+            nut = compute_recipe_nutrition(cook, recipes_root, nutrition_index)
+            entry["nutrition"] = {
+                "perServing": nut["perServing"],
+                "total": nut["total"],
+                "servings": nut["servings"],
+                "coverage": {
+                    "matched": nut["coverage"]["matched"],
+                    "unmatched": nut["coverage"]["unmatched"],
+                    "approx": nut["coverage"]["approx"],
+                    "complete": nut["coverage"]["complete"],
+                },
+                "source": nut.get("source"),
             }
-        )
+        recipes.append(entry)
 
     chapters = sorted({r["chapter"] for r in recipes})
     payload = {
@@ -208,6 +231,15 @@ def main() -> int:
         "chapters": chapters,
         "aisles": aisle_order,
         "aisleByIngredient": aisle_by_ingredient,
+        "nutrition": (
+            {
+                "enabled": True,
+                "source": (nutrition_index.db.get("meta") or {}).get("source"),
+                "foodCount": (nutrition_index.db.get("meta") or {}).get("foodCount"),
+            }
+            if nutrition_index is not None
+            else {"enabled": False}
+        ),
         "recipes": recipes,
     }
 
