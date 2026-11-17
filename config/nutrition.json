@@ -4,8 +4,8 @@
     "citation": "U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, https://fdc.nal.usda.gov/",
     "nutrientsPer": "100g",
     "note": "Curated offline subset for this cookbook only. Full SR Legacy is ~40MB unzipped — regenerate with scripts/build-nutrition-db.py instead of vendoring USDA.",
-    "foodCount": 136,
-    "aliasCount": 213
+    "foodCount": 141,
+    "aliasCount": 226
   },
   "aliasToFood": {
     "olive oil": "olive-oil",
@@ -142,6 +142,7 @@
     "rolled oats": "oats",
     "chia seeds": "chia",
     "long-grain white rice": "white-rice",
+    "basmati rice": "white-rice",
     "cooked quinoa": "quinoa-cooked",
     "dried lentils": "lentils-dry",
     "cooked lentils": "lentils-cooked",
@@ -207,6 +208,18 @@
     "ketchup": "ketchup",
     "creamy peanut butter": "peanut-butter",
     "chili paste": "chili-paste",
+    "thai green curry paste": "chili-paste",
+    "fish sauce": "fish-sauce",
+    "frozen edamame beans": "edamame-frozen",
+    "frozen edamame": "edamame-frozen",
+    "edamame": "edamame-frozen",
+    "sugar snap peas": "sugar-snap-peas",
+    "frozen garden beans": "green-beans-frozen",
+    "frozen green beans": "green-beans-frozen",
+    "garden beans": "green-beans-frozen",
+    "fresh chili": "fresh-chili",
+    "fresh chilies": "fresh-chili",
+    "fresh chilli": "fresh-chili",
     "pico de gallo": "pico",
     "dry marsala wine": "marsala",
     "white wine": "white-wine",
@@ -223,7 +236,9 @@
     "breadcrumbs": "breadcrumbs"
   },
   "approxAliases": [
+    "basmati rice",
     "gouda",
+    "thai green curry paste",
     "unsweetened plant yogurt",
     "vegan butter"
   ],
@@ -2636,6 +2651,8 @@
         "sodium_mg": 13.0
       },
       "gramsPerUnit": {
+        "can": 388.0,
+        "cans": 388.0,
         "cup": 240.0,
         "g": 1.0,
         "gram": 1.0,
@@ -2981,7 +2998,8 @@
       "fdcId": 168877,
       "description": "Rice, white, long-grain, regular, raw, enriched",
       "aliases": [
-        "long-grain white rice"
+        "long-grain white rice",
+        "basmati rice"
       ],
       "per100g": {
         "kcal": 365.0,
@@ -3005,7 +3023,10 @@
         "oz": 28.3495,
         "pound": 453.592,
         "pounds": 453.592
-      }
+      },
+      "approxAliases": [
+        "basmati rice"
+      ]
     },
     "quinoa-cooked": {
       "id": "quinoa-cooked",
@@ -4713,7 +4734,8 @@
       "fdcId": 174527,
       "description": "Sauce, ready-to-serve, pepper or hot",
       "aliases": [
-        "chili paste"
+        "chili paste",
+        "Thai green curry paste"
       ],
       "per100g": {
         "kcal": 11.0,
@@ -4743,7 +4765,185 @@
         "teaspoons": 5.0,
         "tsp": 5.0
       },
-      "approx": true
+      "approx": true,
+      "approxAliases": [
+        "Thai green curry paste"
+      ]
+    },
+    "fish-sauce": {
+      "id": "fish-sauce",
+      "fdcId": 174531,
+      "description": "Sauce, fish, ready-to-serve",
+      "aliases": [
+        "fish sauce"
+      ],
+      "per100g": {
+        "kcal": 35.0,
+        "protein_g": 5.06,
+        "fat_g": 0.01,
+        "sat_fat_g": 0.003,
+        "carbs_g": 3.64,
+        "fiber_g": 0.0,
+        "sugars_g": 3.64,
+        "sodium_mg": 7851.0
+      },
+      "gramsPerUnit": {
+        "cup": 288.0,
+        "g": 1.0,
+        "gram": 1.0,
+        "grams": 1.0,
+        "kg": 1000.0,
+        "lb": 453.592,
+        "milliliter": 1.18,
+        "milliliters": 1.18,
+        "millilitre": 1.18,
+        "ml": 1.18,
+        "ounce": 28.3495,
+        "ounces": 28.3495,
+        "oz": 28.3495,
+        "pound": 453.592,
+        "pounds": 453.592,
+        "tablespoon": 18.0,
+        "tablespoons": 18.0,
+        "tbsp": 18.0,
+        "teaspoon": 5.8,
+        "teaspoons": 5.8,
+        "tsp": 5.8
+      }
+    },
+    "edamame-frozen": {
+      "id": "edamame-frozen",
+      "fdcId": 168410,
+      "description": "Edamame, frozen, unprepared",
+      "aliases": [
+        "frozen edamame beans",
+        "frozen edamame",
+        "edamame"
+      ],
+      "per100g": {
+        "kcal": 109.0,
+        "protein_g": 11.22,
+        "fat_g": 4.73,
+        "sat_fat_g": 0.0,
+        "carbs_g": 7.61,
+        "fiber_g": 4.8,
+        "sugars_g": 2.48,
+        "sodium_mg": 6.0
+      },
+      "gramsPerUnit": {
+        "cup": 155.0,
+        "g": 1.0,
+        "gram": 1.0,
+        "grams": 1.0,
+        "kg": 1000.0,
+        "lb": 453.592,
+        "ounce": 28.3495,
+        "ounces": 28.3495,
+        "oz": 28.3495,
+        "pound": 453.592,
+        "pounds": 453.592
+      }
+    },
+    "sugar-snap-peas": {
+      "id": "sugar-snap-peas",
+      "fdcId": 170010,
+      "description": "Peas, edible-podded, raw",
+      "aliases": [
+        "sugar snap peas"
+      ],
+      "per100g": {
+        "kcal": 42.0,
+        "protein_g": 2.8,
+        "fat_g": 0.2,
+        "sat_fat_g": 0.039,
+        "carbs_g": 7.55,
+        "fiber_g": 2.6,
+        "sugars_g": 4.0,
+        "sodium_mg": 4.0
+      },
+      "gramsPerUnit": {
+        "cup": 98.0,
+        "g": 1.0,
+        "gram": 1.0,
+        "grams": 1.0,
+        "kg": 1000.0,
+        "lb": 453.592,
+        "ounce": 28.3495,
+        "ounces": 28.3495,
+        "oz": 28.3495,
+        "pound": 453.592,
+        "pounds": 453.592
+      }
+    },
+    "green-beans-frozen": {
+      "id": "green-beans-frozen",
+      "fdcId": 169962,
+      "description": "Beans, snap, green, frozen, all styles, unprepared (Includes foods for USDA's Food Distribution Program)",
+      "aliases": [
+        "frozen garden beans",
+        "frozen green beans",
+        "garden beans"
+      ],
+      "per100g": {
+        "kcal": 33.0,
+        "protein_g": 1.79,
+        "fat_g": 0.21,
+        "sat_fat_g": 0.047,
+        "carbs_g": 7.54,
+        "fiber_g": 2.6,
+        "sugars_g": 2.21,
+        "sodium_mg": 3.0
+      },
+      "gramsPerUnit": {
+        "cup": 121.0,
+        "g": 1.0,
+        "gram": 1.0,
+        "grams": 1.0,
+        "kg": 1000.0,
+        "lb": 453.592,
+        "ounce": 28.3495,
+        "ounces": 28.3495,
+        "oz": 28.3495,
+        "pound": 453.592,
+        "pounds": 453.592
+      }
+    },
+    "fresh-chili": {
+      "id": "fresh-chili",
+      "fdcId": 170497,
+      "description": "Peppers, hot chili, green, raw",
+      "aliases": [
+        "fresh chili",
+        "fresh chilies",
+        "fresh chilli"
+      ],
+      "per100g": {
+        "kcal": 40.0,
+        "protein_g": 2.0,
+        "fat_g": 0.2,
+        "sat_fat_g": 0.021,
+        "carbs_g": 9.46,
+        "fiber_g": 1.5,
+        "sugars_g": 5.1,
+        "sodium_mg": 7.0
+      },
+      "gramsPerUnit": {
+        "": 14.0,
+        "g": 1.0,
+        "gram": 1.0,
+        "grams": 1.0,
+        "kg": 1000.0,
+        "lb": 453.592,
+        "medium": 14.0,
+        "ounce": 28.3495,
+        "ounces": 28.3495,
+        "oz": 28.3495,
+        "piece": 14.0,
+        "pieces": 14.0,
+        "pound": 453.592,
+        "pounds": 453.592,
+        "small": 10.0
+      }
     },
     "pico": {
       "id": "pico",

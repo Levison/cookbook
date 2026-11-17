@@ -494,7 +494,15 @@ FOODS: list[dict] = [
         "id": "coconut-milk",
         "fdc_id": 170173,  # canned coconut milk
         "aliases": ["coconut milk"],
-        "units_override": {"cup": 240, "tbsp": 15, "tsp": 5, "ml": 0.97},
+        # Typical 13.5 fl oz (~400 ml) can ≈ 388 g at ~0.97 g/ml
+        "units_override": {
+            "cup": 240,
+            "tbsp": 15,
+            "tsp": 5,
+            "ml": 0.97,
+            "can": 388,
+            "cans": 388,
+        },
     },
     # Dry goods
     {
@@ -555,8 +563,9 @@ FOODS: list[dict] = [
     {
         "id": "white-rice",
         "fdc_id": 168877,
-        "aliases": ["long-grain white rice"],
+        "aliases": ["long-grain white rice", "basmati rice"],
         "units_override": {"cup": 185},
+        "approx_aliases": ["basmati rice"],
     },
     {
         "id": "quinoa-cooked",
@@ -855,9 +864,41 @@ FOODS: list[dict] = [
     {
         "id": "chili-paste",
         "fdc_id": 174527,  # Sauce, ready-to-serve, pepper or hot
-        "aliases": ["chili paste"],
+        "aliases": ["chili paste", "Thai green curry paste"],
         "units_override": {"tsp": 5, "tbsp": 15},
         "approx": True,
+        "approx_aliases": ["Thai green curry paste"],
+    },
+    {
+        "id": "fish-sauce",
+        "fdc_id": 174531,  # Sauce, fish, ready-to-serve
+        "aliases": ["fish sauce"],
+        "units_override": {"tsp": 5.8, "tbsp": 18, "cup": 288, "ml": 1.18},
+    },
+    {
+        "id": "edamame-frozen",
+        "fdc_id": 168410,  # Edamame, frozen, unprepared
+        "aliases": ["frozen edamame beans", "frozen edamame", "edamame"],
+        "units_override": {"cup": 155},
+    },
+    {
+        "id": "sugar-snap-peas",
+        "fdc_id": 170010,  # Peas, edible-podded, raw
+        "aliases": ["sugar snap peas"],
+        "units_override": {"cup": 98},
+    },
+    {
+        "id": "green-beans-frozen",
+        "fdc_id": 169962,  # Beans, snap, green, frozen, all styles, unprepared
+        "aliases": ["frozen garden beans", "frozen green beans", "garden beans"],
+        "units_override": {"cup": 121},
+    },
+    {
+        "id": "fresh-chili",
+        "fdc_id": 170497,  # Peppers, hot chili, green, raw
+        "aliases": ["fresh chili", "fresh chilies", "fresh chilli"],
+        "piece_g": 14,
+        "units_override": {"small": 10, "medium": 14},
     },
     {
         "id": "pico",

@@ -63,6 +63,16 @@ class NutritionDbTests(unittest.TestCase):
             or any(line.get("kind") == "recipe" for line in nut["lines"])
         )
 
+    def test_thai_green_curry_coverage(self):
+        cook = ROOT / "recipes" / "mains" / "Chicken Thai Green Curry.cook"
+        nut = compute_recipe_nutrition(cook, ROOT / "recipes", self.index)
+        self.assertEqual(nut["coverage"]["unmatched"], [])
+        self.assertGreater(nut["perServing"]["kcal"], 200)
+        # Coconut milk measured in cans should convert
+        self.assertFalse(
+            any(s.get("reason") == "unsupported_unit:cans" for s in nut["coverage"]["skipped"])
+        )
+
 
 if __name__ == "__main__":
     raise SystemExit(unittest.main())
