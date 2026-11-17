@@ -134,6 +134,23 @@ cook doctor aisle --base-path "$(pwd)/recipes"
 
 Use an absolute `--base-path` for `doctor aisle` when recipes are nested (a CookCLI quirk with `-b .`). Section names and aliases in `aisle.conf` should be tuned to your usual store; the checked-in file is a working default.
 
+## Nutrition facts
+
+Each recipe page shows estimated **per-serving nutrition** (calories, fat, carbs, protein, etc.), built offline from ingredient quantities.
+
+- Lookup table: [`config/nutrition.json`](config/nutrition.json) — curated USDA SR Legacy subset (~120 KiB) keyed to the names in `aisle.conf` / recipes.
+- Aggregation runs in `site-enhancements/build-manifest.py` via `nutritionlib.py` and lands in `recipes-manifest.json`.
+- “To taste” / unmeasured items are skipped; a few specialty ingredients use close USDA stand-ins (flagged on the panel).
+
+Full USDA dumps are tens to hundreds of megabytes — too large to vendor. To refresh the curated table after adding foods:
+
+```bash
+# Download + unzip SR Legacy CSV from https://fdc.nal.usda.gov/download-datasets/
+python3 scripts/build-nutrition-db.py --usda-dir /path/to/FoodData_Central_sr_legacy_food_csv_2018-04
+```
+
+Add new foods/aliases in `scripts/build-nutrition-db.py` (`FOODS` list), then regenerate `config/nutrition.json`.
+
 ## Compose recipes
 
 Reference another recipe like an ingredient. Paths are relative to the recipes root, without the `.cook` extension:

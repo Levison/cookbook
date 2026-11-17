@@ -471,6 +471,127 @@
     });
   }
 
+  function formatNutritionNumber(n, digits) {
+    if (!isFinite(n)) return '—';
+    if (digits === 0) return String(Math.round(n));
+    var rounded = Math.round(n * Math.pow(10, digits)) / Math.pow(10, digits);
+    return String(rounded);
+  }
+
+  function scaleNutritionBlock(perServing, factor) {
+    var out = {};
+    var keys = [
+      'kcal',
+      'fat_g',
+      'sat_fat_g',
+      'carbs_g',
+      'fiber_g',
+      'sugars_g',
+      'protein_g',
+      'sodium_mg'
+    ];
+    keys.forEach(function (k) {
+      var v = Number((perServing && perServing[k]) || 0);
+      out[k] = v * factor;
+    });
+    return out;
+  }
+
+  function renderNutritionPanel(host, recipe, servings) {
+    if (!host || !recipe || !recipe.nutrition || !recipe.nutrition.perServing) return null;
+
+    var baseServings = Number(recipe.nutrition.servings || recipe.servings) || 1;
+    if (baseServings <= 0) baseServings = 1;
+    servings = Number(servings);
+    if (!isFinite(servings) || servings <= 0) servings = baseServings;
+    // Per-serving macros stay constant when the recipe is scaled linearly.
+    var n = recipe.nutrition.perServing;
+    var batch = scaleNutritionBlock(n, servings);
+    var cov = recipe.nutrition.coverage || {};
+    var notes = [];
+    if (cov.approx) notes.push('some ingredients use close USDA stand-ins');
+    if (cov.unmatched && cov.unmatched.length) {
+      notes.push(
+        cov.unmatched.length +
+          ' ingredient' +
+          (cov.unmatched.length === 1 ? '' : 's') +
+          ' not in the offline table'
+      );
+    }
+    notes.push('estimates from ingredient totals; cooking losses not modeled');
+
+    var panel = host.querySelector('.nutrition-panel');
+    if (!panel) {
+      panel = document.createElement('aside');
+      panel.className = 'nutrition-panel';
+      panel.setAttribute('aria-label', 'Nutrition facts');
+      host.appendChild(panel);
+    }
+
+    panel.innerHTML =
+      '<div class="nutrition-panel-head">' +
+      '<h2 class="nutrition-title">Nutrition</h2>' +
+      '<p class="nutrition-serving">Per serving' +
+      (baseServings > 1 ? ' · recipe makes ' + baseServings : '') +
+      '</p>' +
+      '</div>' +
+      '<dl class="nutrition-facts">' +
+      '<div class="nutrition-row nutrition-row-cal"><dt>Calories</dt><dd>' +
+      formatNutritionNumber(n.kcal, 0) +
+      '</dd></div>' +
+      '<div class="nutrition-row"><dt>Total Fat</dt><dd>' +
+      formatNutritionNumber(n.fat_g, 1) +
+      ' g</dd></div>' +
+      '<div class="nutrition-row nutrition-indent"><dt>Saturated Fat</dt><dd>' +
+      formatNutritionNumber(n.sat_fat_g, 1) +
+      ' g</dd></div>' +
+      '<div class="nutrition-row"><dt>Sodium</dt><dd>' +
+      formatNutritionNumber(n.sodium_mg, 0) +
+      ' mg</dd></div>' +
+      '<div class="nutrition-row"><dt>Total Carbohydrate</dt><dd>' +
+      formatNutritionNumber(n.carbs_g, 1) +
+      ' g</dd></div>' +
+      '<div class="nutrition-row nutrition-indent"><dt>Dietary Fiber</dt><dd>' +
+      formatNutritionNumber(n.fiber_g, 1) +
+      ' g</dd></div>' +
+      '<div class="nutrition-row nutrition-indent"><dt>Total Sugars</dt><dd>' +
+      formatNutritionNumber(n.sugars_g, 1) +
+      ' g</dd></div>' +
+      '<div class="nutrition-row"><dt>Protein</dt><dd>' +
+      formatNutritionNumber(n.protein_g, 1) +
+      ' g</dd></div>' +
+      '</dl>' +
+      '<p class="nutrition-batch">Whole dish at ' +
+      servings +
+      ' serving' +
+      (Math.abs(servings - 1) < 1e-9 ? '' : 's') +
+      ': <strong>' +
+      formatNutritionNumber(batch.kcal, 0) +
+      ' kcal</strong></p>' +
+      '<p class="nutrition-note">' +
+      notes.join(' · ') +
+      '. Source: USDA SR Legacy (offline).</p>';
+
+    return panel;
+  }
+
+  function findNutritionHost(found) {
+    // Prefer placing after the grocery hint / ingredient section.
+    var article = document.querySelector('article') || document.querySelector('main') || document.body;
+    var existing = document.getElementById('nutrition-host');
+    if (existing) return existing;
+    var host = document.createElement('div');
+    host.id = 'nutrition-host';
+    host.className = 'nutrition-host';
+    if (found && found.lists && found.lists.length) {
+      var lastList = found.lists[found.lists.length - 1];
+      lastList.insertAdjacentElement('afterend', host);
+    } else {
+      article.appendChild(host);
+    }
+    return host;
+  }
+
   function enhanceRecipePage() {
     var found = findIngredientLists();
     if (!found.heading || !found.lists.length) return;
@@ -548,9 +669,17 @@
     loadManifest()
       .then(function (data) {
         var recipe = findRecipeInManifest(data);
-        if (recipe && recipe.scaling) {
-          enhanceRecipeScaling(found, recipe, toolbar);
+        if (!recipe) return;
+        var nutritionHost = findNutritionHost(found);
+        var servingsForNutrition = Number(recipe.servings) || 1;
+        if (recipe.scaling) {
+          enhanceRecipeScaling(found, recipe, toolbar, function (servings) {
+            renderNutritionPanel(nutritionHost, recipe, servings);
+          });
+          var input = document.getElementById('recipe-servings');
+          if (input) servingsForNutrition = Number(input.value) || servingsForNutrition;
         }
+        renderNutritionPanel(nutritionHost, recipe, servingsForNutrition);
       })
       .catch(function () {
         /* manifest optional for grocery checkboxes */
@@ -673,7 +802,7 @@
     }
   }
 
-  function enhanceRecipeScaling(found, recipe, groceryToolbar) {
+  function enhanceRecipeScaling(found, recipe, groceryToolbar, onServingsChange) {
     var baseServings = Number(recipe.servings) || 1;
     if (baseServings <= 0) baseServings = 1;
 
@@ -740,6 +869,7 @@
 
       updateServingsPill(servings);
       scaleCookingModeData(factor);
+      if (typeof onServingsChange === 'function') onServingsChange(servings);
 
       if (!opts.skipUrl) writeServingsToQuery(servings);
     }
@@ -1506,9 +1636,14 @@
 
             var meta = document.createElement('span');
             meta.className = 'plan-recipe-meta';
-            meta.textContent =
+            var metaParts = [
               (recipe.ingredientCount || (recipe.ingredients && recipe.ingredients.length) || 0) +
-              ' ingredients';
+                ' ingredients'
+            ];
+            if (recipe.nutrition && recipe.nutrition.perServing && recipe.nutrition.perServing.kcal != null) {
+              metaParts.push(Math.round(recipe.nutrition.perServing.kcal) + ' kcal/serving');
+            }
+            meta.textContent = metaParts.join(' · ');
             body.appendChild(meta);
 
             var open = document.createElement('a');

@@ -27,3 +27,6 @@ jobs:
 
       - name: Report aisle gaps
         run: cook doctor aisle --base-path "${{ github.workspace }}/recipes"
+
+      - name: Nutrition library tests
+        run: python3 site-enhancements/test_nutritionlib.py

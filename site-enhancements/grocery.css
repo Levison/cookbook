@@ -118,6 +118,118 @@
   color: #9ca3af;
 }
 
+.nutrition-host {
+  margin: 1.25rem 0 1.75rem;
+}
+
+.nutrition-panel {
+  max-width: 22rem;
+  border: 2px solid #1c1917;
+  border-radius: 0.35rem;
+  padding: 0.75rem 0.9rem 0.85rem;
+  background: #fffbeb;
+  color: #1c1917;
+}
+
+.nutrition-panel-head {
+  border-bottom: 8px solid #1c1917;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.2rem;
+}
+
+.nutrition-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.nutrition-serving {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #44403c;
+}
+
+.nutrition-facts {
+  margin: 0;
+}
+
+.nutrition-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid #d6d3d1;
+  padding: 0.28rem 0;
+  font-size: 0.9rem;
+}
+
+.nutrition-row:first-child {
+  border-top: 0;
+}
+
+.nutrition-row dt {
+  font-weight: 700;
+  margin: 0;
+}
+
+.nutrition-row dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.nutrition-row-cal {
+  font-size: 1.15rem;
+  border-bottom: 4px solid #1c1917;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.1rem;
+}
+
+.nutrition-indent {
+  padding-left: 0.85rem;
+}
+
+.nutrition-indent dt {
+  font-weight: 500;
+}
+
+.nutrition-batch {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #44403c;
+}
+
+.nutrition-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: #57534e;
+}
+
+.dark .nutrition-panel {
+  background: #1f2937;
+  border-color: #e7e5e4;
+  color: #f5f5f4;
+}
+
+.dark .nutrition-panel-head,
+.dark .nutrition-row-cal {
+  border-color: #e7e5e4;
+}
+
+.dark .nutrition-serving,
+.dark .nutrition-batch,
+.dark .nutrition-note {
+  color: #a8a29e;
+}
+
+.dark .nutrition-row {
+  border-top-color: #57534e;
+}
+
 .grocery-toolbar button,
 .grocery-actions button {
   font-size: 0.875rem;
