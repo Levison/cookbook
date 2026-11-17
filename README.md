@@ -69,6 +69,7 @@ Recipe step wording follows [WRITING.md](WRITING.md) — step order, heat levels
 | [Fluffy Pancakes](recipes/breakfast/Fluffy%20Pancakes.cook) | [Laura Fuentes](https://www.laurafuentes.com/fluffy-pancakes-recipe/) |
 | [Turkey Burgers](recipes/mains/Turkey%20Burgers.cook) | [Tastes Better From Scratch](https://tastesbetterfromscratch.com/turkey-burgers/) |
 | [Thai Peanut Noodles](recipes/mains/Thai%20Peanut%20Noodles.cook) | [Tornadough Alli](https://tornadoughalli.com/thai-peanut-noodles/) |
+| [Chicken Thai Green Curry](recipes/mains/Chicken%20Thai%20Green%20Curry.cook) | Personal |
 | [Artichoke Dip](recipes/appetizers/Artichoke%20Dip.cook) | Personal |
 | [Black Bean Quesadillas](recipes/mains/Black%20Bean%20Quesadillas.cook) | Gourmet Today, pages 299–300 |
 | [Pumpkin Pizza](recipes/pizza/Pumpkin%20Pizza.cook) | Runner's World Vegetarian Cookbook (annotated) — [transcription review #12](https://github.com/Levison/cookbook/issues/12) |
